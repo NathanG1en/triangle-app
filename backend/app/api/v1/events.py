@@ -1,72 +1,54 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_, func
+from sqlalchemy import or_, and_
 
 from app.core.database import get_db
-from app.models.events import Event, Attendance
-from app.schemas.events import EventResponse, EventCreate, AttendanceRequest, AttendeeSummary
-from app.ingestion.pipeline import IngestionPipeline, parse_durham_lowdown_sample
+from app.models.events import Event, Attendance, User
+from app.schemas.events import EventResponse, EventCreate, AttendanceRequest, EventCandidate
+from app.ingestion.pipeline import parse_durham_lowdown_sample, IngestionPipeline
 
-router = APIRouter(prefix="/events", tags=["Events"])
+router = APIRouter()
 
-def build_event_response(event: Event, db: Session, current_user_id: Optional[str] = None) -> EventResponse:
+def build_event_response(event: Event, db: Session, current_user_id: str = "user_1") -> EventResponse:
     attendances = db.query(Attendance).filter(Attendance.event_id == event.id).all()
     
     interested_count = sum(1 for a in attendances if a.status == "INTERESTED")
     going_count = sum(1 for a in attendances if a.status == "GOING")
     
     user_status = None
-    if current_user_id:
-        user_att = next((a for a in attendances if a.user_id == current_user_id), None)
-        if user_att:
-            user_status = user_att.status
-
+    for a in attendances:
+        if a.user_id == current_user_id:
+            user_status = a.status
+            break
+            
     attendees_summary = [
-        AttendeeSummary(
-            user_id=a.user_id,
-            user_name=a.user_name,
-            user_avatar=a.user_avatar,
-            status=a.status
-        )
+        {
+            "user_id": a.user_id,
+            "user_name": a.user_name,
+            "user_avatar": a.user_avatar,
+            "status": a.status
+        }
         for a in attendances
     ]
+    
+    res = EventResponse.model_validate(event)
+    res.interested_count = interested_count
+    res.going_count = going_count
+    res.user_attendance_status = user_status
+    res.attendees = attendees_summary
+    return res
 
-    return EventResponse(
-        id=event.id,
-        title=event.title,
-        description=event.description,
-        venue_name=event.venue_name,
-        address=event.address,
-        city=event.city,
-        start_at=event.start_at,
-        end_at=event.end_at,
-        category=event.category,
-        price_min=event.price_min,
-        price_max=event.price_max,
-        is_free=event.is_free,
-        image_url=event.image_url,
-        source_name=event.source_name,
-        source_url=event.source_url,
-        source_type=event.source_type,
-        external_id=event.external_id,
-        created_at=event.created_at,
-        interested_count=interested_count,
-        going_count=going_count,
-        user_attendance_status=user_status,
-        attendees=attendees_summary
-    )
-
-
-@router.get("", response_model=List[EventResponse])
+@router.get("/events", response_model=List[EventResponse])
 def get_events(
-    city: Optional[str] = Query(None, description="Filter by Triangle city (Cary, Morrisville, Raleigh, Durham, Chapel Hill)"),
-    category: Optional[str] = Query(None, description="Filter by category"),
-    search: Optional[str] = Query(None, description="Search keyword in title, venue, or description"),
-    free_only: Optional[bool] = Query(False, description="Filter free events only"),
-    date_filter: Optional[str] = Query(None, description="today, weekend, all"),
-    current_user_id: Optional[str] = Query("user_1", description="Current mock user ID"),
+    city: Optional[str] = Query(default=None),
+    category: Optional[str] = Query(default=None),
+    search: Optional[str] = Query(default=None),
+    date_filter: Optional[str] = Query(default=None),
+    free_only: bool = Query(default=False),
+    time_type: Optional[str] = Query(default=None),
+    current_user_id: str = Query(default="user_1"),
     db: Session = Depends(get_db)
 ):
     query = db.query(Event)
@@ -80,6 +62,11 @@ def get_events(
     if free_only:
         query = query.filter(Event.is_free == True)
 
+    if time_type == "timed":
+        query = query.filter(or_(Event.is_suggestion == False, Event.is_suggestion == None))
+    elif time_type == "untimed":
+        query = query.filter(Event.is_suggestion == True)
+
     if search:
         s = f"%{search}%"
         query = query.filter(
@@ -92,24 +79,53 @@ def get_events(
 
     now = datetime.utcnow()
     if date_filter == "today":
-        end_of_today = now.replace(hour=23, minute=59, second=59)
-        query = query.filter(and_(Event.start_at >= now.replace(hour=0, minute=0, second=0), Event.start_at <= end_of_today))
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+        if time_type == "timed":
+            query = query.filter(and_(Event.start_at >= today_start, Event.start_at <= today_end))
+        else:
+            query = query.filter(
+                or_(
+                    and_(Event.start_at >= today_start, Event.start_at <= today_end),
+                    Event.is_suggestion == True
+                )
+            )
     elif date_filter == "weekend":
-        days_until_saturday = (5 - now.weekday()) % 7
-        saturday_start = (now + timedelta(days=days_until_saturday)).replace(hour=0, minute=0, second=0)
-        sunday_end = (saturday_start + timedelta(days=1)).replace(hour=23, minute=59, second=59)
-        query = query.filter(and_(Event.start_at >= saturday_start, Event.start_at <= sunday_end))
+        weekday = now.weekday()
+        if weekday < 4:
+            fri_start = (now + timedelta(days=(4 - weekday))).replace(hour=17, minute=0, second=0, microsecond=0)
+        else:
+            fri_start = (now - timedelta(days=(weekday - 4))).replace(hour=17, minute=0, second=0, microsecond=0)
+            
+        sun_end = (fri_start + timedelta(days=2)).replace(hour=23, minute=59, second=59, microsecond=999999)
 
-    # Order upcoming events by start_at ascending
+        if time_type == "timed":
+            query = query.filter(and_(Event.start_at >= fri_start, Event.start_at <= sun_end))
+        else:
+            query = query.filter(
+                or_(
+                    and_(Event.start_at >= fri_start, Event.start_at <= sun_end),
+                    Event.is_suggestion == True
+                )
+            )
+
     events = query.order_by(Event.start_at.asc()).all()
-
     return [build_event_response(e, db, current_user_id) for e in events]
 
+@router.post("/events/ingest/sample-durham-newsletter", response_model=List[EventResponse])
+def trigger_sample_ingestion(
+    current_user_id: str = "user_1",
+    db: Session = Depends(get_db)
+):
+    candidates = parse_durham_lowdown_sample()
+    pipeline = IngestionPipeline(db)
+    results = [pipeline.process_candidate(c) for c in candidates]
+    return [build_event_response(e, db, current_user_id) for e in results]
 
-@router.get("/{event_id}", response_model=EventResponse)
+@router.get("/events/{event_id}", response_model=EventResponse)
 def get_event_detail(
     event_id: int,
-    current_user_id: Optional[str] = Query("user_1"),
+    current_user_id: str = "user_1",
     db: Session = Depends(get_db)
 ):
     event = db.query(Event).filter(Event.id == event_id).first()
@@ -117,58 +133,16 @@ def get_event_detail(
         raise HTTPException(status_code=404, detail="Event not found")
     return build_event_response(event, db, current_user_id)
 
-
-@router.post("/{event_id}/attendance", response_model=EventResponse)
-def toggle_attendance(
-    event_id: int,
-    req: AttendanceRequest,
-    db: Session = Depends(get_db)
-):
-    event = db.query(Event).filter(Event.id == event_id).first()
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-
-    existing = db.query(Attendance).filter(
-        Attendance.event_id == event_id,
-        Attendance.user_id == req.user_id
-    ).first()
-
-    if req.status == "NONE":
-        if existing:
-            db.delete(existing)
-            db.commit()
-    else:
-        if existing:
-            existing.status = req.status
-            existing.user_name = req.user_name
-            if req.user_avatar:
-                existing.user_avatar = req.user_avatar
-            existing.updated_at = datetime.utcnow()
-        else:
-            new_att = Attendance(
-                event_id=event_id,
-                user_id=req.user_id,
-                user_name=req.user_name,
-                user_avatar=req.user_avatar or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-                status=req.status,
-                updated_at=datetime.utcnow()
-            )
-            db.add(new_att)
-        db.commit()
-
-    return build_event_response(event, db, req.user_id)
-
-
-@router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
-def create_community_event(
+@router.post("/events", response_model=EventResponse)
+def create_event(
     payload: EventCreate,
-    current_user_id: Optional[str] = Query("user_1"),
+    current_user_id: str = "user_1",
     db: Session = Depends(get_db)
 ):
     new_event = Event(
         title=payload.title,
         description=payload.description,
-        venue_name=payload.venue_name or "Triangle Location",
+        venue_name=payload.venue_name,
         address=payload.address,
         city=payload.city,
         start_at=payload.start_at,
@@ -177,36 +151,95 @@ def create_community_event(
         price_min=payload.price_min,
         price_max=payload.price_max,
         is_free=payload.is_free,
-        source_name=payload.source_name or "Community Member",
+        is_suggestion=payload.is_suggestion,
+        image_url=payload.image_url or "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800",
+        source_name=payload.source_name or "Cohort Member",
         source_url=payload.source_url,
         source_type="COMMUNITY",
         created_by_user_id=current_user_id,
-        created_at=datetime.utcnow()
+        recurrence_rule=payload.recurrence_rule,
+        recurrence_parent_id=None,
     )
     db.add(new_event)
     db.commit()
     db.refresh(new_event)
 
-    # Auto-add creator as GOING
-    creator_att = Attendance(
-        event_id=new_event.id,
-        user_id=current_user_id or "user_1",
-        user_name="Alex Chen",
-        user_avatar="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-        status="GOING"
-    )
-    db.add(creator_att)
-    db.commit()
+    # If recurring, mark it as its own series root, then create next 3 occurrences
+    if payload.recurrence_rule:
+        new_event.recurrence_parent_id = new_event.id
+        db.commit()
+        db.refresh(new_event)
+
+        if payload.recurrence_rule == "WEEKLY":
+            deltas = [timedelta(weeks=i) for i in range(1, 4)]
+        elif payload.recurrence_rule == "BIWEEKLY":
+            deltas = [timedelta(weeks=i * 2) for i in range(1, 4)]
+        elif payload.recurrence_rule == "MONTHLY":
+            deltas = [timedelta(days=30 * i) for i in range(1, 4)]
+        else:
+            deltas = []
+
+        for delta in deltas:
+            occurrence = Event(
+                title=new_event.title,
+                description=new_event.description,
+                venue_name=new_event.venue_name,
+                address=new_event.address,
+                city=new_event.city,
+                start_at=new_event.start_at + delta,
+                end_at=(new_event.end_at + delta) if new_event.end_at else None,
+                category=new_event.category,
+                price_min=new_event.price_min,
+                price_max=new_event.price_max,
+                is_free=new_event.is_free,
+                is_suggestion=False,
+                image_url=new_event.image_url,
+                source_name=new_event.source_name,
+                source_url=new_event.source_url,
+                source_type="COMMUNITY",
+                created_by_user_id=current_user_id,
+                recurrence_rule=payload.recurrence_rule,
+                recurrence_parent_id=new_event.id,
+            )
+            db.add(occurrence)
+        db.commit()
 
     return build_event_response(new_event, db, current_user_id)
 
 
-@router.post("/ingest/sample-durham-newsletter", response_model=List[EventResponse])
-def trigger_sample_ingestion(db: Session = Depends(get_db)):
-    pipeline = IngestionPipeline(db)
-    candidates = parse_durham_lowdown_sample()
-    ingested = []
-    for c in candidates:
-        event = pipeline.process_candidate(c)
-        ingested.append(build_event_response(event, db))
-    return ingested
+@router.post("/events/{event_id}/attendance", response_model=EventResponse)
+def toggle_user_attendance(
+    event_id: int,
+    payload: AttendanceRequest,
+    db: Session = Depends(get_db)
+):
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    existing = db.query(Attendance).filter(
+        and_(Attendance.event_id == event_id, Attendance.user_id == payload.user_id)
+    ).first()
+
+    if payload.status == "NONE":
+        if existing:
+            db.delete(existing)
+            db.commit()
+    else:
+        if existing:
+            existing.status = payload.status
+            existing.user_name = payload.user_name
+            existing.user_avatar = payload.user_avatar
+            existing.updated_at = datetime.utcnow()
+        else:
+            new_att = Attendance(
+                event_id=event_id,
+                user_id=payload.user_id,
+                user_name=payload.user_name,
+                user_avatar=payload.user_avatar,
+                status=payload.status
+            )
+            db.add(new_att)
+        db.commit()
+
+    return build_event_response(event, db, payload.user_id)

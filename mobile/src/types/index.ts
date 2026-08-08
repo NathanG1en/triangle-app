@@ -18,6 +18,7 @@ export interface EventItem {
   price_min: number;
   price_max: number;
   is_free: boolean;
+  is_suggestion?: boolean;
   image_url?: string;
   source_name: string;
   source_url?: string;
@@ -28,6 +29,8 @@ export interface EventItem {
   going_count: number;
   user_attendance_status?: 'INTERESTED' | 'GOING' | null;
   attendees: AttendeeSummary[];
+  recurrence_rule?: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | null;
+  recurrence_parent_id?: number | null;
 }
 
 export interface UserProfile {
@@ -50,6 +53,9 @@ export interface EventCreatePayload {
   price_min?: number;
   price_max?: number;
   is_free?: boolean;
+  is_suggestion?: boolean;
+  image_url?: string;
   source_name?: string;
   source_url?: string;
+  recurrence_rule?: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | null;
 }

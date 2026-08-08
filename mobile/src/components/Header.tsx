@@ -1,46 +1,41 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
+import { colors, radii } from '../theme/colors';
+import { useFontTheme } from '../theme/typography';
 import { currentUser } from '../services/api';
 
 interface HeaderProps {
   onOpenCreate: () => void;
-  onTriggerIngest: () => void;
-  selectedCity: string;
-  onSelectCity: (city: string) => void;
+  onOpenIngestion: () => void;
+  onOpenSyncCalendar?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
-  onOpenCreate,
-  onTriggerIngest,
-  selectedCity,
-  onSelectCity,
-}) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenCreate, onOpenIngestion, onOpenSyncCalendar }) => {
+  const { displayFont, sansFont } = useFontTheme();
+
   return (
     <View style={styles.container}>
-      <View style={styles.topRow}>
-        <View style={styles.brandBox}>
-          <View style={styles.liveDot} />
-          <Text style={styles.subBrand}>Triangle Cohort · '26</Text>
-        </View>
-
-        <View style={styles.rightActions}>
-          <TouchableOpacity style={styles.digestBtn} onPress={onTriggerIngest}>
-            <Text style={styles.digestBtnText}>⚡ Import Digest</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.createBtn} onPress={onOpenCreate}>
-            <Text style={styles.createBtnText}>+ Plan</Text>
-          </TouchableOpacity>
-
-          <Image source={{ uri: currentUser.avatar_url }} style={styles.avatar} />
-        </View>
+      <View style={styles.leftBox}>
+        <Text style={[styles.brandTitle, { fontFamily: displayFont }]}>Triangle Social</Text>
+        <Text style={[styles.tagline, { fontFamily: sansFont }]}>Local events & plans · Cohort of '26</Text>
       </View>
 
-      <View style={styles.mainTitleRow}>
-        <Text style={styles.title}>Triangle Social</Text>
-        <Text style={styles.editorialTag}>A local culture magazine for your cohort</Text>
+      <View style={styles.rightActions}>
+        {onOpenSyncCalendar ? (
+          <TouchableOpacity style={styles.calSyncBtn} onPress={onOpenSyncCalendar}>
+            <Text style={[styles.calSyncBtnText, { fontFamily: sansFont }]}>📅 Sync Cal</Text>
+          </TouchableOpacity>
+        ) : null}
+
+        <TouchableOpacity style={styles.digestBtn} onPress={onOpenIngestion}>
+          <Text style={[styles.digestBtnText, { fontFamily: sansFont }]}>Import Digest</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.createBtn} onPress={onOpenCreate}>
+          <Text style={[styles.createBtnText, { fontFamily: sansFont }]}>+ Create Plan</Text>
+        </TouchableOpacity>
+
+        <Image source={{ uri: currentUser.avatar_url }} style={styles.avatar} />
       </View>
     </View>
   );
@@ -49,91 +44,78 @@ export const Header: React.FC<HeaderProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.paper,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colors.ticketBorder,
-  },
-  topRow: {
+    borderBottomColor: colors.borderRule,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
   },
-  brandBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  leftBox: {
+    flex: 1,
   },
-  liveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: colors.coral,
-    marginRight: 6,
+  brandTitle: {
+    fontSize: 22,
+    lineHeight: 24,
+    fontWeight: '700',
+    color: colors.ink,
+    letterSpacing: -0.5,
   },
-  subBrand: {
-    fontFamily: typography.sansFont,
-    fontSize: typography.scale.label.fontSize,
-    fontWeight: typography.scale.label.fontWeight,
+  tagline: {
+    fontSize: 11,
     color: colors.muted,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    marginTop: 1,
   },
   rightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+  },
+  calSyncBtn: {
+    backgroundColor: colors.sand,
+    borderColor: colors.coral,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: radii.button,
+    borderWidth: 1,
+  },
+  calSyncBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.ink,
   },
   digestBtn: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: 10,
+    backgroundColor: colors.paper,
+    paddingHorizontal: 9,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: radii.button,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   digestBtnText: {
-    fontFamily: typography.sansFont,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: colors.ink,
   },
   createBtn: {
     backgroundColor: colors.ink,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.button,
   },
   createBtnText: {
-    fontFamily: typography.sansFont,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.paper,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: colors.coral,
-  },
-  mainTitleRow: {
-    marginTop: 4,
-  },
-  title: {
-    fontFamily: typography.displayFont,
-    fontSize: typography.scale.hero.fontSize,
-    lineHeight: typography.scale.hero.lineHeight,
-    fontWeight: typography.scale.hero.fontWeight,
-    color: colors.ink,
-    letterSpacing: -0.5,
-  },
-  editorialTag: {
-    fontFamily: typography.sansFont,
-    fontSize: 13,
-    color: colors.muted,
-    fontStyle: 'italic',
-    marginTop: 1,
+    marginLeft: 2,
   },
 });

@@ -1,6 +1,8 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel, ConfigDict, Field
+
+RecurrenceRule = Optional[Literal['WEEKLY', 'BIWEEKLY', 'MONTHLY']]
 
 class AttendeeSummary(BaseModel):
     user_id: str
@@ -23,11 +25,14 @@ class EventBase(BaseModel):
     price_min: float = 0.0
     price_max: float = 0.0
     is_free: bool = True
+    is_suggestion: bool = False
     image_url: Optional[str] = None
     source_name: str = "Community"
     source_url: Optional[str] = None
     source_type: str = "COMMUNITY"
     external_id: Optional[str] = None
+    recurrence_rule: RecurrenceRule = None
+    recurrence_parent_id: Optional[int] = None
 
 
 class EventCreate(EventBase):
@@ -41,6 +46,8 @@ class EventResponse(EventBase):
     going_count: int = 0
     user_attendance_status: Optional[str] = None  # None, 'INTERESTED', 'GOING'
     attendees: List[AttendeeSummary] = []
+    recurrence_rule: RecurrenceRule = None
+    recurrence_parent_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -56,6 +63,8 @@ class EventCandidate(BaseModel):
     category: Optional[str] = "Social"
     price_min: Optional[float] = 0.0
     price_max: Optional[float] = 0.0
+    is_suggestion: bool = False
+    image_url: Optional[str] = None
     source_name: str
     source_url: str
     external_id: Optional[str] = None

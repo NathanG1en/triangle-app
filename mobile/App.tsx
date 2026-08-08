@@ -1,54 +1,86 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Platform } from 'react-native';
 import { colors } from './src/theme/colors';
-import { typography } from './src/theme/typography';
+import { FontProvider, useFontTheme } from './src/theme/typography';
+import { CompassIcon, CalendarIcon, PersonIcon } from './src/components/Icons';
 import { DiscoverScreen } from './src/screens/DiscoverScreen';
 import { MyEventsScreen } from './src/screens/MyEventsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 
-export default function App() {
+function MainAppContent() {
   const [currentTab, setCurrentTab] = useState<'discover' | 'my-events' | 'profile'>('discover');
+  const { sansFont } = useFontTheme();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.paper} />
-
-      {/* Main Container with max-width wrapper for web/desktop */}
-      <View style={styles.appWrapper}>
-        <View style={styles.contentContainer}>
-          {currentTab === 'discover' && <DiscoverScreen />}
-          {currentTab === 'my-events' && <MyEventsScreen />}
-          {currentTab === 'profile' && <ProfileScreen />}
-        </View>
-
-        {/* Bottom Tab Bar */}
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={[styles.tabItem, currentTab === 'discover' && styles.activeTabItem]}
-            onPress={() => setCurrentTab('discover')}
-          >
-            <Text style={styles.tabIcon}>🔥</Text>
-            <Text style={[styles.tabLabel, currentTab === 'discover' && styles.activeTabLabel]}>Discover</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabItem, currentTab === 'my-events' && styles.activeTabItem]}
-            onPress={() => setCurrentTab('my-events')}
-          >
-            <Text style={styles.tabIcon}>⭐</Text>
-            <Text style={[styles.tabLabel, currentTab === 'my-events' && styles.activeTabLabel]}>Plans</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabItem, currentTab === 'profile' && styles.activeTabItem]}
-            onPress={() => setCurrentTab('profile')}
-          >
-            <Text style={styles.tabIcon}>👤</Text>
-            <Text style={[styles.tabLabel, currentTab === 'profile' && styles.activeTabLabel]}>Profile</Text>
-          </TouchableOpacity>
-        </View>
+    <View style={styles.appWrapper}>
+      <View style={styles.contentContainer}>
+        {currentTab === 'discover' && <DiscoverScreen />}
+        {currentTab === 'my-events' && <MyEventsScreen />}
+        {currentTab === 'profile' && <ProfileScreen />}
       </View>
-    </SafeAreaView>
+
+      {/* Bottom Tab Bar */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tabItem, currentTab === 'discover' && styles.activeTabItem]}
+          onPress={() => setCurrentTab('discover')}
+        >
+          <CompassIcon color={currentTab === 'discover' ? colors.coral : colors.muted} size={20} />
+          <Text
+            style={[
+              styles.tabLabel,
+              { fontFamily: sansFont },
+              currentTab === 'discover' && styles.activeTabLabel,
+            ]}
+          >
+            Discover
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabItem, currentTab === 'my-events' && styles.activeTabItem]}
+          onPress={() => setCurrentTab('my-events')}
+        >
+          <CalendarIcon color={currentTab === 'my-events' ? colors.coral : colors.muted} size={20} />
+          <Text
+            style={[
+              styles.tabLabel,
+              { fontFamily: sansFont },
+              currentTab === 'my-events' && styles.activeTabLabel,
+            ]}
+          >
+            Plans
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabItem, currentTab === 'profile' && styles.activeTabItem]}
+          onPress={() => setCurrentTab('profile')}
+        >
+          <PersonIcon color={currentTab === 'profile' ? colors.coral : colors.muted} size={20} />
+          <Text
+            style={[
+              styles.tabLabel,
+              { fontFamily: sansFont },
+              currentTab === 'profile' && styles.activeTabLabel,
+            ]}
+          >
+            Profile
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+export default function App() {
+  return (
+    <FontProvider>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.paper} />
+        <MainAppContent />
+      </SafeAreaView>
+    </FontProvider>
   );
 }
 
@@ -70,27 +102,23 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    height: 60,
+    height: 56,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: colors.ticketBorder,
-    paddingBottom: 4,
+    borderTopColor: colors.borderRule,
+    paddingBottom: 2,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 2,
   },
   activeTabItem: {
     borderTopWidth: 2,
     borderTopColor: colors.coral,
   },
-  tabIcon: {
-    fontSize: 18,
-    marginBottom: 2,
-  },
   tabLabel: {
-    fontFamily: typography.sansFont,
     fontSize: 11,
     fontWeight: '600',
     color: colors.muted,

@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { EventItem } from '../types';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
+import { colors, radii } from '../theme/colors';
+import { useFontTheme } from '../theme/typography';
 
 interface FeaturedEventCardProps {
   event: EventItem;
@@ -15,7 +15,9 @@ export const FeaturedEventCard: React.FC<FeaturedEventCardProps> = ({
   onPress,
   onToggleAttendance,
 }) => {
+  const { displayFont, sansFont } = useFontTheme();
   const isGoing = event.user_attendance_status === 'GOING';
+  const isSpotSuggestion = event.is_suggestion || event.source_type === 'SUGGESTION';
 
   const formatDate = (isoString: string) => {
     try {
@@ -26,244 +28,177 @@ export const FeaturedEventCard: React.FC<FeaturedEventCardProps> = ({
         day: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
-      });
+      }).toUpperCase();
     } catch {
       return isoString;
     }
   };
 
-  // Build human attendee string
-  const attendeesList = event.attendees || [];
-  const goingUsers = attendeesList.filter((a) => a.status === 'GOING');
-  let humanSocialText = 'Be first from your cohort to join';
-  if (goingUsers.length > 0) {
-    const firstTwo = goingUsers.slice(0, 2).map((a) => a.user_name.split(' ')[0]);
-    const remaining = goingUsers.length - firstTwo.length;
-    if (remaining > 0) {
-      humanSocialText = `${firstTwo.join(', ')} + ${remaining} more going`;
-    } else {
-      humanSocialText = `${firstTwo.join(' & ')} going`;
+  let curationLabel = isSpotSuggestion ? 'LOCAL SPOT RECOMMENDATION' : "EDITOR'S PICK";
+  if (!isSpotSuggestion) {
+    if (event.going_count >= 2) {
+      curationLabel = 'POPULAR WITH YOUR COHORT';
+    } else if (event.is_free) {
+      curationLabel = 'GOOD & FREE';
+    } else if (event.category === 'Outdoor & Fitness') {
+      curationLabel = 'SATURDAY MORNING PICK';
+    } else if (event.city === 'Chapel Hill' || event.city === 'Durham') {
+      curationLabel = 'WORTH THE DRIVE';
     }
   }
 
-  return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.92} onPress={() => onPress(event)}>
-      {/* Top Banner Tag */}
-      <View style={styles.featuredTagBar}>
-        <Text style={styles.featuredLabel}>★ FEATURED THIS WEEKEND</Text>
-        <Text style={styles.cityLabel}>📍 {event.city}</Text>
-      </View>
+  const eyebrowText = `${curationLabel} · ${event.city.toUpperCase()}`;
 
-      {/* Hero Photography */}
+  const attendeesList = event.attendees || [];
+  const goingUsers = attendeesList.filter((a) => a.status === 'GOING');
+  let humanSocialText = 'Be the first in your cohort';
+  if (goingUsers.length > 0) {
+    const firstTwo = goingUsers.slice(0, 2).map((a) => a.user_name.split(' ')[0]);
+    const remaining = goingUsers.length - firstTwo.length;
+    humanSocialText = remaining > 0 ? `${firstTwo.join(', ')} + ${remaining} friends going` : `${firstTwo.join(' & ')} going`;
+  }
+
+  const metaText = isSpotSuggestion
+    ? `Anytime Spot · ${event.venue_name || event.city} · ${event.is_free ? 'FREE ENTRY' : `$${event.price_min}`}`
+    : `${formatDate(event.start_at)} · ${event.venue_name} · ${event.is_free ? 'FREE' : `$${event.price_min}`}`;
+
+  return (
+    <TouchableOpacity style={styles.container} activeOpacity={0.92} onPress={() => onPress(event)}>
+      <Text style={[styles.eyebrow, { fontFamily: sansFont }, isSpotSuggestion && styles.spotEyebrow]}>{eyebrowText}</Text>
+
       {event.image_url ? (
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: event.image_url }} style={styles.heroImage} resizeMode="cover" />
-          <View style={styles.priceTicket}>
-            <Text style={styles.priceTicketText}>{event.is_free ? 'FREE ENTRY' : `$${event.price_min}`}</Text>
-          </View>
+        <View style={styles.photoContainer}>
+          <Image source={{ uri: event.image_url }} style={styles.heroPhoto} resizeMode="cover" />
         </View>
       ) : null}
 
-      {/* Editorial Content Frame */}
-      <View style={styles.contentBody}>
-        <Text style={styles.categoryStamp}>{event.category.toUpperCase()}</Text>
-        <Text style={styles.serifTitle}>{event.title}</Text>
+      <Text style={[styles.serifTitle, { fontFamily: displayFont }]}>{event.title}</Text>
 
-        <View style={styles.infoLine}>
-          <Text style={styles.dateTimeText}>📅 {formatDate(event.start_at)}</Text>
-          <Text style={styles.dotSeparator}>·</Text>
-          <Text style={styles.venueText}>🏢 {event.venue_name}</Text>
-        </View>
+      <Text style={[styles.metaLine, { fontFamily: sansFont }]}>{metaText}</Text>
 
-        {event.description ? (
-          <Text style={styles.description} numberOfLines={2}>
-            {event.description}
-          </Text>
-        ) : null}
+      {event.description ? (
+        <Text style={[styles.description, { fontFamily: sansFont }]} numberOfLines={2}>
+          {event.description}
+        </Text>
+      ) : null}
 
-        {/* Provenance & Social Proof Footer */}
-        <View style={styles.socialFooter}>
-          <View style={styles.socialLeft}>
-            <View style={styles.avatarStack}>
-              {goingUsers.slice(0, 3).map((a, idx) => (
-                <Image
-                  key={a.user_id + idx}
-                  source={{ uri: a.user_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' }}
-                  style={[styles.stackedAvatar, { marginLeft: idx > 0 ? -8 : 0 }]}
-                />
-              ))}
-            </View>
-            <Text style={styles.socialText}>{humanSocialText}</Text>
+      <View style={styles.actionRow}>
+        <View style={styles.socialLeft}>
+          <View style={styles.avatarStack}>
+            {goingUsers.slice(0, 3).map((a, idx) => (
+              <Image
+                key={a.user_id + idx}
+                source={{ uri: a.user_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' }}
+                style={[styles.stackedAvatar, { marginLeft: idx > 0 ? -6 : 0 }]}
+              />
+            ))}
           </View>
-
-          {/* Primary CTA */}
-          <TouchableOpacity
-            style={[styles.ctaButton, isGoing && styles.ctaButtonActive]}
-            onPress={(e) => {
-              e.stopPropagation();
-              onToggleAttendance(event.id, isGoing ? 'NONE' : 'GOING');
-            }}
-          >
-            <Text style={[styles.ctaText, isGoing && styles.ctaTextActive]}>
-              {isGoing ? '✓ You are Going' : "I'm going"}
-            </Text>
-          </TouchableOpacity>
+          <Text style={[styles.socialText, { fontFamily: sansFont }]}>{humanSocialText}</Text>
         </View>
+
+        <TouchableOpacity
+          style={[styles.ctaBtn, isGoing && styles.ctaBtnActive]}
+          onPress={(e) => {
+            e.stopPropagation();
+            onToggleAttendance(event.id, isGoing ? 'NONE' : 'GOING');
+          }}
+        >
+          <Text style={[styles.ctaText, { fontFamily: sansFont }, isGoing && styles.ctaTextActive]}>
+            {isGoing ? '✓ You are Going' : "I'm going →"}
+          </Text>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.paper,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    marginBottom: 20,
-    boxShadow: `0px 4px 12px ${colors.cardShadow}`,
+  container: {
+    paddingVertical: 14,
+    borderBottomWidth: 1.5,
+    borderBottomColor: colors.ink,
+    marginBottom: 16,
   },
-  featuredTagBar: {
-    backgroundColor: colors.ink,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  featuredLabel: {
-    fontFamily: typography.sansFont,
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.lilac,
-    letterSpacing: 1,
-  },
-  cityLabel: {
-    fontFamily: typography.sansFont,
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.paper,
-  },
-  imageContainer: {
-    height: 200,
-    width: '100%',
-    position: 'relative',
-    backgroundColor: colors.surface,
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  priceTicket: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: colors.paper,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.ink,
-  },
-  priceTicketText: {
-    fontFamily: typography.sansFont,
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.ink,
-  },
-  contentBody: {
-    padding: 18,
-  },
-  categoryStamp: {
-    fontFamily: typography.sansFont,
+  eyebrow: {
     fontSize: 11,
     fontWeight: '800',
     color: colors.coral,
     letterSpacing: 1,
-    marginBottom: 4,
-  },
-  serifTitle: {
-    fontFamily: typography.displayFont,
-    fontSize: 22,
-    lineHeight: 28,
-    fontWeight: '700',
-    color: colors.ink,
     marginBottom: 8,
   },
-  infoLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginBottom: 10,
-    gap: 6,
-  },
-  dateTimeText: {
-    fontFamily: typography.sansFont,
-    fontSize: 13,
-    fontWeight: '700',
+  spotEyebrow: {
     color: colors.forest,
   },
-  dotSeparator: {
-    color: colors.muted,
+  photoContainer: {
+    height: 190,
+    width: '100%',
+    borderRadius: radii.card,
+    overflow: 'hidden',
+    marginBottom: 12,
+    backgroundColor: colors.surface,
   },
-  venueText: {
-    fontFamily: typography.sansFont,
-    fontSize: 13,
-    color: colors.muted,
+  heroPhoto: {
+    width: '100%',
+    height: '100%',
+  },
+  serifTitle: {
+    fontSize: 24,
+    lineHeight: 29,
+    fontWeight: '700',
+    color: colors.ink,
+    marginBottom: 6,
+  },
+  metaLine: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.forest,
+    marginBottom: 8,
   },
   description: {
-    fontFamily: typography.sansFont,
     fontSize: 14,
     lineHeight: 20,
     color: colors.ink,
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  socialFooter: {
-    borderTopWidth: 1,
-    borderTopColor: colors.ticketBorder,
-    paddingTop: 14,
+  actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 8,
   },
   socialLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
     flex: 1,
-    gap: 8,
   },
   avatarStack: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   stackedAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
     borderColor: colors.paper,
   },
   socialText: {
-    fontFamily: typography.sansFont,
     fontSize: 12,
     fontWeight: '600',
     color: colors.ink,
-    flex: 1,
   },
-  ctaButton: {
+  ctaBtn: {
     backgroundColor: colors.ink,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radii.button,
   },
-  ctaButtonActive: {
+  ctaBtnActive: {
     backgroundColor: colors.forest,
   },
   ctaText: {
-    fontFamily: typography.sansFont,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.paper,
   },

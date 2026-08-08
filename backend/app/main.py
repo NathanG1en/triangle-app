@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import Base, engine
 from app.api.v1.events import router as events_router
+from app.api.v1.ingestion import router as ingestion_router
+from app.api.v1.calendar import router as calendar_router
 from app.services.seed_data import seed_database
 
 # Create tables on startup
@@ -23,6 +25,8 @@ app.add_middleware(
 )
 
 app.include_router(events_router, prefix="/api/v1")
+app.include_router(ingestion_router, prefix="/api/v1/ingestion")
+app.include_router(calendar_router, prefix="/api/v1/calendar")
 
 @app.get("/health", tags=["Health"])
 def health_check():

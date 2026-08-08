@@ -18,13 +18,16 @@ class Event(Base):
     price_min = Column(Float, default=0.0)
     price_max = Column(Float, default=0.0)
     is_free = Column(Boolean, default=True)
+    is_suggestion = Column(Boolean, default=False)
     image_url = Column(String(500), nullable=True)
     source_name = Column(String(100), nullable=False, default="Community")
     source_url = Column(String(500), nullable=True)
-    source_type = Column(String(50), default="COMMUNITY") # API, RSS, NEWSLETTER, HTML, COMMUNITY
+    source_type = Column(String(50), default="COMMUNITY") # API, RSS, NEWSLETTER, HTML, COMMUNITY, SUGGESTION
     external_id = Column(String(255), nullable=True, index=True)
     created_by_user_id = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    recurrence_rule = Column(String(20), nullable=True)   # WEEKLY, BIWEEKLY, MONTHLY, or None
+    recurrence_parent_id = Column(Integer, nullable=True)  # ID of the first event in the series
 
     attendances = relationship("Attendance", back_populates="event", cascade="all, delete-orphan")
 

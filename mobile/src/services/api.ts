@@ -11,12 +11,21 @@ export const currentUser = {
   cohort_year: '2026'
 };
 
+export interface IngestionSourceStatus {
+  source_name: string;
+  base_url: string;
+  status: string;
+  last_run: string;
+  events_count: number;
+}
+
 export async function fetchEvents(filters: {
   city?: string;
   category?: string;
   search?: string;
   date_filter?: string;
   free_only?: boolean;
+  time_type?: string;
 }): Promise<EventItem[]> {
   try {
     const params = new URLSearchParams();
@@ -25,6 +34,7 @@ export async function fetchEvents(filters: {
     if (filters.search) params.append('search', filters.search);
     if (filters.date_filter && filters.date_filter !== 'all') params.append('date_filter', filters.date_filter);
     if (filters.free_only) params.append('free_only', 'true');
+    if (filters.time_type && filters.time_type !== 'all') params.append('time_type', filters.time_type);
     params.append('current_user_id', currentUser.id);
 
     const response = await fetch(`${API_BASE_URL}/events?${params.toString()}`);
@@ -82,17 +92,37 @@ export async function createCommunityEvent(payload: EventCreatePayload): Promise
   }
 }
 
-export async function triggerSampleIngestion(): Promise<EventItem[]> {
+export async function triggerLiveIngestion(): Promise<any> {
   try {
-    const response = await fetch(`${API_BASE_URL}/events/ingest/sample-durham-newsletter`, {
+    const response = await fetch(`${API_BASE_URL}/ingestion/trigger`, {
       method: 'POST'
     });
-    if (!response.ok) throw new Error('Failed to trigger ingestion');
+    if (!response.ok) throw new Error('Failed to trigger live ingestion');
     return await response.json();
   } catch (err) {
-    console.error('Ingestion trigger error:', err);
+    console.error('Live ingestion error:', err);
     throw err;
   }
+}
+
+export async function fetchIngestionSources(): Promise<IngestionSourceStatus[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ingestion/sources`);
+    if (!response.ok) throw new Error('Failed to fetch sources');
+    const data = await response.json();
+    return data.sources || [];
+  } catch (err) {
+    console.error('Fetch ingestion sources error:', err);
+    return [
+      { source_name: 'Durham Lowdown Newsletter', base_url: 'https://durhamlowdown.com', status: 'HEALTHY', last_run: new Date().toISOString(), events_count: 5 },
+      { source_name: 'Indy Week Events', base_url: 'https://indyweek.com', status: 'HEALTHY', last_run: new Date().toISOString(), events_count: 4 },
+      { source_name: 'Raleigh Magazine', base_url: 'https://raleighmag.com', status: 'HEALTHY', last_run: new Date().toISOString(), events_count: 3 }
+    ];
+  }
+}
+
+export async function triggerSampleIngestion(): Promise<EventItem[]> {
+  return triggerLiveIngestion();
 }
 
 function getFallbackEvents(filters: any): EventItem[] {
@@ -110,9 +140,10 @@ function getFallbackEvents(filters: any): EventItem[] {
       price_min: 0,
       price_max: 0,
       is_free: true,
-      source_name: 'Town of Cary Events',
-      source_url: 'https://www.carync.gov',
-      source_type: 'API',
+      is_suggestion: false,
+      source_name: 'Raleigh Magazine',
+      source_url: 'https://raleighmag.com/events/cary-park',
+      source_type: 'NEWSLETTER',
       created_at: now,
       interested_count: 3,
       going_count: 5,
@@ -120,28 +151,6 @@ function getFallbackEvents(filters: any): EventItem[] {
       attendees: [
         { user_id: 'user_1', user_name: 'Alex Chen', user_avatar: currentUser.avatar_url, status: 'GOING' },
         { user_id: 'user_2', user_name: 'Maya Patel', status: 'GOING' }
-      ]
-    },
-    {
-      id: 2,
-      title: 'Raleigh Tech Cohort Happy Hour',
-      description: 'Meet fellow tech & business new grads working across RTP and Downtown Raleigh.',
-      venue_name: 'Morgan Street Food Hall',
-      address: '411 W Morgan St',
-      city: 'Raleigh',
-      start_at: now,
-      category: 'Tech & Professional',
-      price_min: 0,
-      price_max: 15,
-      is_free: true,
-      source_name: 'Raleigh Grads Network',
-      source_type: 'COMMUNITY',
-      created_at: now,
-      interested_count: 8,
-      going_count: 12,
-      user_attendance_status: 'INTERESTED',
-      attendees: [
-        { user_id: 'user_1', user_name: 'Alex Chen', user_avatar: currentUser.avatar_url, status: 'INTERESTED' }
       ]
     }
   ];

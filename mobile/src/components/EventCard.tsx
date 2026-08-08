@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { EventItem } from '../types';
-import { colors, categoryColors } from '../theme/colors';
-import { typography } from '../theme/typography';
+import { colors, radii } from '../theme/colors';
+import { useFontTheme } from '../theme/typography';
 
 interface EventCardProps {
   event: EventItem;
@@ -11,7 +11,7 @@ interface EventCardProps {
 }
 
 export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onToggleAttendance }) => {
-  const catStyle = categoryColors[event.category] || { bg: colors.surface, text: colors.ink };
+  const { displayFont, sansFont } = useFontTheme();
 
   const formatDate = (isoString: string) => {
     try {
@@ -31,60 +31,47 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onToggleAt
   const isGoing = event.user_attendance_status === 'GOING';
   const isInterested = event.user_attendance_status === 'INTERESTED';
 
-  // Human social text
   const attendeesList = event.attendees || [];
   const goingUsers = attendeesList.filter((a) => a.status === 'GOING');
   let humanSocialText = 'Be first from cohort!';
   if (goingUsers.length > 0) {
     const names = goingUsers.slice(0, 2).map((a) => a.user_name.split(' ')[0]);
     const extra = goingUsers.length - names.length;
-    humanSocialText = extra > 0 ? `${names.join(', ')} + ${extra} going` : `${names.join(' & ')} going`;
+    humanSocialText = extra > 0 ? `${names.join(', ')} + ${extra} friends going` : `${names.join(' & ')} going`;
   }
 
+  const isSpotSuggestion = event.is_suggestion || event.source_type === 'SUGGESTION';
+
+  const categoryCityHeader = isSpotSuggestion
+    ? `LOCAL SPOT · ${event.city.toUpperCase()}`
+    : `${event.category.toUpperCase()} · ${event.city.toUpperCase()}`;
+
+  const timePriceLine = isSpotSuggestion
+    ? `Anytime Spot · ${event.is_free ? 'Free Entry' : `$${event.price_min}`} · ${event.venue_name || event.city}`
+    : `${formatDate(event.start_at)} · ${event.is_free ? 'Free' : `$${event.price_min}`} · ${event.venue_name}`;
+
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => onPress(event)}>
-      {/* Thumbnail + Main Meta */}
-      <View style={styles.topContent}>
-        {event.image_url ? (
-          <Image source={{ uri: event.image_url }} style={styles.thumbnail} resizeMode="cover" />
-        ) : (
-          <View style={[styles.thumbnailPlaceholder, { backgroundColor: catStyle.bg }]}>
-            <Text style={[styles.placeholderText, { color: catStyle.text }]}>{event.category[0]}</Text>
-          </View>
-        )}
+    <TouchableOpacity style={styles.container} activeOpacity={0.88} onPress={() => onPress(event)}>
+      <View style={styles.topRow}>
+        <View style={styles.textContent}>
+          <Text style={[styles.catCityHeader, { fontFamily: sansFont }, isSpotSuggestion && styles.spotHeader]}>
+            {categoryCityHeader}
+          </Text>
 
-        <View style={styles.mainMeta}>
-          <View style={styles.badgeRow}>
-            <View style={[styles.catBadge, { backgroundColor: catStyle.bg }]}>
-              <Text style={[styles.catBadgeText, { color: catStyle.text }]}>{event.category}</Text>
-            </View>
-
-            <View style={styles.cityBadge}>
-              <Text style={styles.cityBadgeText}>📍 {event.city}</Text>
-            </View>
-
-            <View style={[styles.priceTag, event.is_free ? styles.freePrice : styles.paidPrice]}>
-              <Text style={styles.priceTagText}>{event.is_free ? 'FREE' : `$${event.price_min}`}</Text>
-            </View>
-          </View>
-
-          <Text style={styles.serifTitle} numberOfLines={2}>
+          <Text style={[styles.serifTitle, { fontFamily: displayFont }]} numberOfLines={2}>
             {event.title}
           </Text>
 
-          <Text style={styles.dateTimeText}>📅 {formatDate(event.start_at)}</Text>
-          <Text style={styles.venueText} numberOfLines={1}>
-            🏢 {event.venue_name}
+          <Text style={[styles.timePriceText, { fontFamily: sansFont }]} numberOfLines={1}>
+            {timePriceLine}
           </Text>
         </View>
+
+        {event.image_url ? (
+          <Image source={{ uri: event.image_url }} style={styles.thumbnail} resizeMode="cover" />
+        ) : null}
       </View>
 
-      {/* Source Provenance Label */}
-      <View style={styles.sourceRow}>
-        <Text style={styles.sourceText}>Source: {event.source_name}</Text>
-      </View>
-
-      {/* Social Attendance Footer */}
       <View style={styles.footer}>
         <View style={styles.socialLeft}>
           <View style={styles.avatarStack}>
@@ -96,7 +83,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onToggleAt
               />
             ))}
           </View>
-          <Text style={styles.humanSocialText}>{humanSocialText}</Text>
+          <Text style={[styles.humanSocialText, { fontFamily: sansFont }]}>{humanSocialText}</Text>
         </View>
 
         <View style={styles.actions}>
@@ -107,7 +94,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onToggleAt
               onToggleAttendance(event.id, isInterested ? 'NONE' : 'INTERESTED');
             }}
           >
-            <Text style={[styles.actionBtnText, isInterested && styles.activeBtnText]}>
+            <Text style={[styles.actionBtnText, { fontFamily: sansFont }, isInterested && styles.activeBtnText]}>
               {isInterested ? '★ Interested' : '☆ Interested'}
             </Text>
           </TouchableOpacity>
@@ -119,7 +106,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onToggleAt
               onToggleAttendance(event.id, isGoing ? 'NONE' : 'GOING');
             }}
           >
-            <Text style={[styles.actionBtnText, isGoing && styles.activeBtnText]}>
+            <Text style={[styles.actionBtnText, { fontFamily: sansFont }, isGoing && styles.activeBtnText]}>
               {isGoing ? '✓ Going' : '+ Going'}
             </Text>
           </TouchableOpacity>
@@ -130,122 +117,50 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPress, onToggleAt
 };
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.paper,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.ticketBorder,
-    boxShadow: `0px 2px 6px ${colors.cardShadow}`,
+  container: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderRule,
   },
-  topContent: {
+  topRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     gap: 12,
   },
-  thumbnail: {
-    width: 84,
-    height: 84,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-  },
-  thumbnailPlaceholder: {
-    width: 84,
-    height: 84,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholderText: {
-    fontFamily: typography.displayFont,
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  mainMeta: {
+  textContent: {
     flex: 1,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 4,
-  },
-  catBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  catBadgeText: {
-    fontFamily: typography.sansFont,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  cityBadge: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: colors.ticketBorder,
-  },
-  cityBadgeText: {
-    fontFamily: typography.sansFont,
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.muted,
-  },
-  priceTag: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginLeft: 'auto',
-  },
-  freePrice: {
-    backgroundColor: '#D1EBE7',
-  },
-  paidPrice: {
-    backgroundColor: colors.sand,
-  },
-  priceTagText: {
-    fontFamily: typography.sansFont,
+  catCityHeader: {
     fontSize: 10,
     fontWeight: '800',
-    color: colors.ink,
+    color: colors.coral,
+    letterSpacing: 0.8,
+    marginBottom: 3,
+  },
+  spotHeader: {
+    color: colors.forest,
   },
   serifTitle: {
-    fontFamily: typography.displayFont,
-    fontSize: 16,
-    lineHeight: 20,
+    fontSize: 17,
+    lineHeight: 21,
     fontWeight: '700',
     color: colors.ink,
     marginBottom: 4,
   },
-  dateTimeText: {
-    fontFamily: typography.sansFont,
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.forest,
-  },
-  venueText: {
-    fontFamily: typography.sansFont,
+  timePriceText: {
     fontSize: 12,
     color: colors.muted,
+    marginBottom: 6,
   },
-  sourceRow: {
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  sourceText: {
-    fontFamily: typography.sansFont,
-    fontSize: 11,
-    color: colors.muted,
-    fontStyle: 'italic',
+  thumbnail: {
+    width: 72,
+    height: 72,
+    borderRadius: radii.button,
+    backgroundColor: colors.surface,
   },
   footer: {
-    borderTopWidth: 1,
-    borderTopColor: colors.ticketBorder,
-    paddingTop: 10,
+    marginTop: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -261,14 +176,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   stackedAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 1.5,
     borderColor: colors.paper,
   },
   humanSocialText: {
-    fontFamily: typography.sansFont,
     fontSize: 11,
     fontWeight: '600',
     color: colors.ink,
@@ -281,9 +195,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     paddingHorizontal: 9,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: radii.button,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   interestedActive: {
     backgroundColor: colors.sand,
@@ -294,7 +208,6 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   actionBtnText: {
-    fontFamily: typography.sansFont,
     fontSize: 11,
     fontWeight: '600',
     color: colors.ink,

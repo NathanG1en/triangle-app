@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, Linking } from 'react-native';
 import { EventItem } from '../types';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
+import { colors, radii } from '../theme/colors';
+import { useFontTheme } from '../theme/typography';
 
 interface EventDetailModalProps {
   event: EventItem | null;
   visible: boolean;
   onClose: () => void;
   onToggleAttendance: (eventId: number, status: 'INTERESTED' | 'GOING' | 'NONE') => void;
+  onOpenCalendarModal?: (event: EventItem) => void;
+  onProposeSpotPlan?: (spot: EventItem) => void;
 }
 
 export const EventDetailModal: React.FC<EventDetailModalProps> = ({
@@ -16,13 +18,17 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   visible,
   onClose,
   onToggleAttendance,
+  onOpenCalendarModal,
+  onProposeSpotPlan,
 }) => {
+  const { displayFont, sansFont } = useFontTheme();
   const [attendeeTab, setAttendeeTab] = useState<'ALL' | 'GOING' | 'INTERESTED'>('ALL');
 
   if (!event) return null;
 
   const isGoing = event.user_attendance_status === 'GOING';
   const isInterested = event.user_attendance_status === 'INTERESTED';
+  const isSpotSuggestion = event.is_suggestion || event.source_type === 'SUGGESTION';
 
   const openMap = () => {
     const loc = encodeURIComponent(`${event.venue_name || ''} ${event.address || ''} ${event.city} NC`);
@@ -41,14 +47,26 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     return true;
   });
 
+  const formattedTimeOrSpot = isSpotSuggestion
+    ? 'LOCAL SPOT RECOMMENDATION · OPEN REGULAR HOURS'
+    : new Date(event.start_at).toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           {/* Top Bar */}
           <View style={styles.topBar}>
-            <View style={styles.cityTag}>
-              <Text style={styles.cityText}>📍 {event.city}, NC</Text>
+            <View style={[styles.cityTag, isSpotSuggestion && styles.spotCityTag]}>
+              <Text style={[styles.cityText, { fontFamily: sansFont }, isSpotSuggestion && styles.spotCityText]}>
+                {isSpotSuggestion ? 'LOCAL SPOT SUGGESTION' : `${event.city.toUpperCase()} · NC`}
+              </Text>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
               <Text style={styles.closeBtnText}>✕</Text>
@@ -60,60 +78,107 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             {event.image_url ? (
               <View style={styles.heroCoverBox}>
                 <Image source={{ uri: event.image_url }} style={styles.heroCoverImage} resizeMode="cover" />
-                <View style={styles.catSticker}>
-                  <Text style={styles.catStickerText}>{event.category.toUpperCase()}</Text>
+                <View style={[styles.catSticker, isSpotSuggestion && styles.spotSticker]}>
+                  <Text style={[styles.catStickerText, { fontFamily: sansFont }]}>
+                    {isSpotSuggestion ? 'SPOT' : event.category.toUpperCase()}
+                  </Text>
                 </View>
               </View>
             ) : null}
 
-            {/* Serif Title */}
-            <Text style={styles.serifTitle}>{event.title}</Text>
+            {/* Display Title */}
+            <Text style={[styles.serifTitle, { fontFamily: displayFont }]}>{event.title}</Text>
 
             {/* Quick Metadata */}
             <View style={styles.metaRow}>
-              <Text style={styles.metaTime}>📅 {new Date(event.start_at).toLocaleString()}</Text>
-              <Text style={styles.metaPrice}>{event.is_free ? 'FREE ENTRY' : `$${event.price_min}`}</Text>
+              <Text style={[styles.metaTime, { fontFamily: sansFont }, isSpotSuggestion && styles.spotMetaTime]}>
+                {formattedTimeOrSpot}
+              </Text>
+              <Text style={[styles.metaPrice, { fontFamily: sansFont }]}>
+                {event.is_free ? 'FREE ENTRY' : `$${event.price_min}`}
+              </Text>
             </View>
 
             {/* Venue & Location Box */}
             <View style={styles.locationCard}>
               <View style={styles.locationInfo}>
-                <Text style={styles.venueTitle}>{event.venue_name}</Text>
-                {event.address ? <Text style={styles.addressText}>{event.address}</Text> : null}
+                <Text style={[styles.venueTitle, { fontFamily: sansFont }]}>{event.venue_name || event.city}</Text>
+                {event.address ? <Text style={[styles.addressText, { fontFamily: sansFont }]}>{event.address}</Text> : null}
               </View>
-              <TouchableOpacity style={styles.mapBtn} onPress={openMap}>
-                <Text style={styles.mapBtnText}>🗺️ Open Maps</Text>
-              </TouchableOpacity>
+
+              <View style={styles.locationActions}>
+                <TouchableOpacity style={styles.mapBtn} onPress={openMap}>
+                  <Text style={[styles.mapBtnText, { fontFamily: sansFont }]}>Open Maps →</Text>
+                </TouchableOpacity>
+
+                {!isSpotSuggestion && onOpenCalendarModal ? (
+                  <TouchableOpacity
+                    style={styles.calBtn}
+                    onPress={() => onOpenCalendarModal(event)}
+                  >
+                    <Text style={[styles.calBtnText, { fontFamily: sansFont }]}>📅 Add to Calendar</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
 
+            {/* Propose Date & Time Card for Spots */}
+            {isSpotSuggestion && onProposeSpotPlan ? (
+              <TouchableOpacity
+                style={styles.proposeSpotCard}
+                onPress={() => {
+                  onClose();
+                  onProposeSpotPlan(event);
+                }}
+              >
+                <View style={styles.proposeSpotContent}>
+                  <Text style={[styles.proposeSpotTitle, { fontFamily: displayFont }]}>
+                    💡 Propose a Date & Time for Cohort
+                  </Text>
+                  <Text style={[styles.proposeSpotSub, { fontFamily: sansFont }]}>
+                    Schedule a specific hangout time here so members can RSVP & sync to Google/Apple Calendar!
+                  </Text>
+                </View>
+                <View style={styles.proposeBtnPill}>
+                  <Text style={[styles.proposeBtnPillText, { fontFamily: sansFont }]}>📅 Schedule →</Text>
+                </View>
+              </TouchableOpacity>
+            ) : null}
+
             {/* Description */}
-            <Text style={styles.sectionHeading}>About this event</Text>
-            <Text style={styles.descriptionText}>
-              {event.description || 'No detailed description available for this community event.'}
+            <Text style={[styles.sectionHeading, { fontFamily: displayFont }]}>
+              {isSpotSuggestion ? 'About this spot' : 'About this event'}
+            </Text>
+            <Text style={[styles.descriptionText, { fontFamily: sansFont }]}>
+              {event.description || 'No detailed description available.'}
             </Text>
 
             {/* Source Provenance */}
             <View style={styles.sourceBox}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.sourceLabel}>Source: {event.source_name}</Text>
-                <Text style={styles.sourceSub}>Ingested via {event.source_type}</Text>
+                <Text style={[styles.sourceLabel, { fontFamily: sansFont }]}>Source: {event.source_name}</Text>
+                <Text style={[styles.sourceSub, { fontFamily: sansFont }]}>
+                  {isSpotSuggestion ? 'Curated Cohort Spot' : `Ingested via ${event.source_type}`}
+                </Text>
               </View>
               {event.source_url ? (
                 <TouchableOpacity style={styles.sourceBtn} onPress={openSource}>
-                  <Text style={styles.sourceBtnText}>Original Page ↗</Text>
+                  <Text style={[styles.sourceBtnText, { fontFamily: sansFont }]}>Original Page ↗</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
 
             {/* Social RSVP Control Section */}
             <View style={styles.rsvpSection}>
-              <Text style={styles.sectionHeading}>Your Cohort Plan</Text>
+              <Text style={[styles.sectionHeading, { fontFamily: displayFont }]}>
+                {isSpotSuggestion ? 'Meet Up With Cohort' : 'Your Cohort Plan'}
+              </Text>
               <View style={styles.rsvpButtonsRow}>
                 <TouchableOpacity
                   style={[styles.rsvpBtn, isInterested && styles.rsvpInterestedActive]}
                   onPress={() => onToggleAttendance(event.id, isInterested ? 'NONE' : 'INTERESTED')}
                 >
-                  <Text style={[styles.rsvpBtnText, isInterested && styles.rsvpActiveText]}>
+                  <Text style={[styles.rsvpBtnText, { fontFamily: sansFont }, isInterested && styles.rsvpActiveText]}>
                     {isInterested ? '★ Interested' : '☆ Mark Interested'}
                   </Text>
                 </TouchableOpacity>
@@ -122,7 +187,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   style={[styles.rsvpBtn, isGoing && styles.rsvpGoingActive]}
                   onPress={() => onToggleAttendance(event.id, isGoing ? 'NONE' : 'GOING')}
                 >
-                  <Text style={[styles.rsvpBtnText, isGoing && styles.rsvpActiveText]}>
+                  <Text style={[styles.rsvpBtnText, { fontFamily: sansFont }, isGoing && styles.rsvpActiveText]}>
                     {isGoing ? '✓ You are Going' : "+ I'm Going"}
                   </Text>
                 </TouchableOpacity>
@@ -132,19 +197,21 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             {/* Cohort Attendees List */}
             <View style={styles.attendeesSection}>
               <View style={styles.attendeesHeader}>
-                <Text style={styles.sectionHeading}>Cohort Members Attending ({event.attendees?.length || 0})</Text>
+                <Text style={[styles.sectionHeading, { fontFamily: displayFont }]}>
+                  Cohort Members Attending ({event.attendees?.length || 0})
+                </Text>
                 <View style={styles.tabPills}>
                   <TouchableOpacity
                     style={[styles.tabPill, attendeeTab === 'ALL' && styles.tabPillActive]}
                     onPress={() => setAttendeeTab('ALL')}
                   >
-                    <Text style={styles.tabPillText}>All</Text>
+                    <Text style={[styles.tabPillText, { fontFamily: sansFont }]}>All</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.tabPill, attendeeTab === 'GOING' && styles.tabPillActive]}
                     onPress={() => setAttendeeTab('GOING')}
                   >
-                    <Text style={styles.tabPillText}>Going ({event.going_count})</Text>
+                    <Text style={[styles.tabPillText, { fontFamily: sansFont }]}>Going ({event.going_count})</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -157,8 +224,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                       style={styles.attendeeAvatar}
                     />
                     <View style={styles.attendeeInfo}>
-                      <Text style={styles.attendeeName}>{a.user_name}</Text>
-                      <Text style={styles.attendeeCohort}>Cohort of 2026</Text>
+                      <Text style={[styles.attendeeName, { fontFamily: sansFont }]}>{a.user_name}</Text>
+                      <Text style={[styles.attendeeCohort, { fontFamily: sansFont }]}>Cohort of 2026</Text>
                     </View>
                     <View
                       style={[
@@ -166,12 +233,14 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         a.status === 'GOING' ? styles.statusGoing : styles.statusInterested,
                       ]}
                     >
-                      <Text style={styles.statusBadgeText}>{a.status}</Text>
+                      <Text style={[styles.statusBadgeText, { fontFamily: sansFont }]}>{a.status}</Text>
                     </View>
                   </View>
                 ))
               ) : (
-                <Text style={styles.emptyAttendees}>No cohort members listed for this filter yet.</Text>
+                <Text style={[styles.emptyAttendees, { fontFamily: sansFont }]}>
+                  No cohort members listed for this filter yet.
+                </Text>
               )}
             </View>
           </ScrollView>
@@ -189,12 +258,12 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: colors.paper,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radii.card,
+    borderTopRightRadius: radii.card,
     maxHeight: '90%',
     padding: 20,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
+    borderWidth: 1,
+    borderColor: colors.borderRule,
   },
   topBar: {
     flexDirection: 'row',
@@ -206,15 +275,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radii.button,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
+  },
+  spotCityTag: {
+    backgroundColor: colors.sand,
+    borderColor: colors.coral,
   },
   cityText: {
-    fontFamily: typography.sansFont,
     color: colors.ink,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  spotCityText: {
+    color: colors.coral,
   },
   closeBtn: {
     width: 32,
@@ -224,7 +300,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   closeBtnText: {
     color: colors.ink,
@@ -237,7 +313,7 @@ const styles = StyleSheet.create({
   heroCoverBox: {
     height: 180,
     width: '100%',
-    borderRadius: 14,
+    borderRadius: radii.card,
     overflow: 'hidden',
     marginBottom: 14,
     position: 'relative',
@@ -254,17 +330,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.coral,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: radii.button,
+  },
+  spotSticker: {
+    backgroundColor: colors.forest,
   },
   catStickerText: {
-    fontFamily: typography.sansFont,
     color: colors.paper,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   serifTitle: {
-    fontFamily: typography.displayFont,
     fontSize: 24,
     lineHeight: 30,
     fontWeight: '700',
@@ -278,67 +355,118 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   metaTime: {
-    fontFamily: typography.sansFont,
     color: colors.forest,
     fontSize: 13,
     fontWeight: '700',
   },
+  spotMetaTime: {
+    color: colors.coral,
+  },
   metaPrice: {
-    fontFamily: typography.sansFont,
     color: colors.ink,
     fontSize: 13,
     fontWeight: '800',
   },
   locationCard: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: radii.button,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   locationInfo: {
     flex: 1,
     marginRight: 10,
   },
   venueTitle: {
-    fontFamily: typography.sansFont,
     color: colors.ink,
     fontSize: 14,
     fontWeight: '700',
   },
   addressText: {
-    fontFamily: typography.sansFont,
     color: colors.muted,
     fontSize: 12,
     marginTop: 2,
   },
+  locationActions: {
+    gap: 6,
+  },
   mapBtn: {
     backgroundColor: colors.paper,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 5,
+    borderRadius: radii.button,
     borderWidth: 1,
     borderColor: colors.ink,
+    alignItems: 'center',
   },
   mapBtnText: {
-    fontFamily: typography.sansFont,
     color: colors.ink,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
+  calBtn: {
+    backgroundColor: colors.sand,
+    borderColor: colors.coral,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.button,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  calBtnText: {
+    color: colors.ink,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  proposeSpotCard: {
+    backgroundColor: colors.sand,
+    borderColor: colors.coral,
+    borderWidth: 1.5,
+    borderRadius: radii.button,
+    padding: 12,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  proposeSpotContent: {
+    flex: 1,
+    marginRight: 10,
+  },
+  proposeSpotTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.ink,
+    marginBottom: 2,
+  },
+  proposeSpotSub: {
+    fontSize: 11,
+    color: colors.muted,
+    lineHeight: 15,
+  },
+  proposeBtnPill: {
+    backgroundColor: colors.coral,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radii.button,
+  },
+  proposeBtnPillText: {
+    color: colors.paper,
+    fontSize: 12,
+    fontWeight: '800',
+  },
   sectionHeading: {
-    fontFamily: typography.displayFont,
     fontSize: 18,
     fontWeight: '700',
     color: colors.ink,
     marginBottom: 6,
   },
   descriptionText: {
-    fontFamily: typography.sansFont,
     color: colors.ink,
     fontSize: 14,
     lineHeight: 22,
@@ -346,23 +474,21 @@ const styles = StyleSheet.create({
   },
   sourceBox: {
     backgroundColor: colors.surface,
-    borderRadius: 10,
+    borderRadius: radii.button,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   sourceLabel: {
-    fontFamily: typography.sansFont,
     color: colors.ink,
     fontSize: 13,
     fontWeight: '600',
   },
   sourceSub: {
-    fontFamily: typography.sansFont,
     color: colors.muted,
     fontSize: 11,
     marginTop: 2,
@@ -371,12 +497,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: radii.button,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   sourceBtnText: {
-    fontFamily: typography.sansFont,
     color: colors.ink,
     fontSize: 12,
     fontWeight: '700',
@@ -393,10 +518,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: radii.button,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   rsvpInterestedActive: {
     backgroundColor: colors.sand,
@@ -407,7 +532,6 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
   rsvpBtnText: {
-    fontFamily: typography.sansFont,
     color: colors.ink,
     fontSize: 13,
     fontWeight: '700',
@@ -431,13 +555,12 @@ const styles = StyleSheet.create({
   tabPill: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: radii.button,
   },
   tabPillActive: {
     backgroundColor: colors.surface,
   },
   tabPillText: {
-    fontFamily: typography.sansFont,
     color: colors.muted,
     fontSize: 11,
     fontWeight: '600',
@@ -447,7 +570,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     padding: 10,
-    borderRadius: 10,
+    borderRadius: radii.button,
     marginBottom: 6,
   },
   attendeeAvatar: {
@@ -460,20 +583,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   attendeeName: {
-    fontFamily: typography.sansFont,
     color: colors.ink,
     fontSize: 13,
     fontWeight: '700',
   },
   attendeeCohort: {
-    fontFamily: typography.sansFont,
     color: colors.muted,
     fontSize: 11,
   },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: radii.button,
   },
   statusGoing: {
     backgroundColor: '#D1EBE7',
@@ -482,13 +603,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sand,
   },
   statusBadgeText: {
-    fontFamily: typography.sansFont,
     fontSize: 10,
     fontWeight: '800',
     color: colors.ink,
   },
   emptyAttendees: {
-    fontFamily: typography.sansFont,
     color: colors.muted,
     fontStyle: 'italic',
     fontSize: 12,

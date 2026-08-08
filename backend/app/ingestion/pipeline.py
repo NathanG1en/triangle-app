@@ -51,7 +51,6 @@ class IngestionPipeline:
         self.db = db
 
     def process_candidate(self, candidate: EventCandidate) -> Event:
-        # Normalize fields
         city = normalize_city(candidate.city)
         category = normalize_category(candidate.category)
         venue_name = candidate.venue_name.strip() if candidate.venue_name else "Triangle Venue"
@@ -59,7 +58,6 @@ class IngestionPipeline:
         
         fingerprint = candidate.external_id or generate_fingerprint(title, venue_name, candidate.start_at)
         
-        # Deduplication check
         existing = None
         if candidate.external_id:
             existing = self.db.query(Event).filter(Event.external_id == candidate.external_id).first()
@@ -69,7 +67,6 @@ class IngestionPipeline:
         is_free = (candidate.price_min or 0.0) == 0.0 and (candidate.price_max or 0.0) == 0.0
 
         if existing:
-            # Update event metadata if modified
             existing.title = title
             existing.description = candidate.description or existing.description
             existing.venue_name = venue_name
@@ -77,11 +74,12 @@ class IngestionPipeline:
             existing.city = city
             existing.category = category
             existing.source_url = candidate.source_url
+            existing.image_url = candidate.image_url or existing.image_url
+            existing.is_suggestion = candidate.is_suggestion
             self.db.commit()
             self.db.refresh(existing)
             return existing
         else:
-            # Create new event
             new_event = Event(
                 title=title,
                 description=candidate.description,
@@ -94,9 +92,11 @@ class IngestionPipeline:
                 price_min=candidate.price_min or 0.0,
                 price_max=candidate.price_max or 0.0,
                 is_free=is_free,
+                is_suggestion=candidate.is_suggestion,
+                image_url=candidate.image_url,
                 source_name=candidate.source_name,
                 source_url=candidate.source_url,
-                source_type="NEWSLETTER" if "Newsletter" in candidate.source_name else "API",
+                source_type="SUGGESTION" if candidate.is_suggestion else ("NEWSLETTER" if "Newsletter" in candidate.source_name else "API"),
                 external_id=fingerprint,
                 created_at=datetime.utcnow()
             )
@@ -105,9 +105,7 @@ class IngestionPipeline:
             self.db.refresh(new_event)
             return new_event
 
-
 def parse_durham_lowdown_sample() -> List[EventCandidate]:
-    """Sample parser simulating extraction from Durham Lowdown newsletter digest."""
     now = datetime.utcnow()
     next_friday = now + timedelta(days=(4 - now.weekday()) % 7 + 1)
     next_friday = next_friday.replace(hour=18, minute=0, second=0, microsecond=0)
@@ -124,8 +122,10 @@ def parse_durham_lowdown_sample() -> List[EventCandidate]:
             category="Food & Drink",
             price_min=0.0,
             price_max=0.0,
+            is_suggestion=False,
             source_name="Durham Lowdown Newsletter",
             source_url="https://durhamlowdown.com/editions/friday-night-market",
+            image_url="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800",
             external_id="dl_night_market_01"
         ),
         EventCandidate(
@@ -139,8 +139,10 @@ def parse_durham_lowdown_sample() -> List[EventCandidate]:
             category="Social",
             price_min=0.0,
             price_max=0.0,
+            is_suggestion=False,
             source_name="Durham Lowdown Newsletter",
             source_url="https://durhamlowdown.com/editions/fullsteam-trivia",
+            image_url="https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800",
             external_id="dl_fullsteam_trivia_02"
         )
     ]
