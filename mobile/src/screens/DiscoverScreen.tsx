@@ -14,13 +14,18 @@ import { FilterSheetModal } from '../components/FilterSheetModal';
 import { IngestionModal } from '../components/IngestionModal';
 import { CalendarExportModal } from '../components/CalendarExportModal';
 import { ProposeSpotPlanModal } from '../components/ProposeSpotPlanModal';
+import { MapView } from '../components/MapView';
+
+type ViewMode = 'feed' | 'map';
 
 export const DiscoverScreen: React.FC = () => {
   const { displayFont, sansFont } = useFontTheme();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  
+
+  const [viewMode, setViewMode] = useState<ViewMode>('feed');
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'weekend'>('all');
   const [freeOnly, setFreeOnly] = useState<boolean>(false);
@@ -62,6 +67,19 @@ export const DiscoverScreen: React.FC = () => {
   useEffect(() => {
     loadEvents();
   }, [loadEvents]);
+
+  // Listen for postMessage from map iframe pin clicks
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'SELECT_EVENT') {
+        const found = events.find((ev) => ev.id === e.data.eventId);
+        if (found) setActiveModalEvent(found);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [events]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -110,9 +128,7 @@ export const DiscoverScreen: React.FC = () => {
 
   const showBanner = (msg: string) => {
     setBannerMessage(msg);
-    setTimeout(() => {
-      setBannerMessage(null);
-    }, 5000);
+    setTimeout(() => setBannerMessage(null), 5000);
   };
 
   const featuredEvent = events.length > 0 ? events[0] : null;
@@ -152,64 +168,49 @@ export const DiscoverScreen: React.FC = () => {
         </View>
       ) : null}
 
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.ink} />}
-      >
-        <View style={styles.discoveryToolbar}>
-          <View style={styles.searchBox}>
-            <TextInput
-              style={[styles.searchInput, { fontFamily: sansFont }]}
-              placeholder="Search events, spots, or activities..."
-              placeholderTextColor={colors.muted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery ? (
-              <TouchableOpacity style={styles.clearSearch} onPress={() => setSearchQuery('')}>
-                <Text style={styles.clearSearchText}>✕</Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
+      {/* ── View Mode Toggle ─────────────────────────────────────────────── */}
+      <View style={styles.viewToggleBar}>
+        <TouchableOpacity
+          style={[styles.viewToggleBtn, viewMode === 'feed' && styles.viewToggleBtnActive]}
+          onPress={() => setViewMode('feed')}
+        >
+          <Text style={[styles.viewToggleText, { fontFamily: sansFont }, viewMode === 'feed' && styles.viewToggleTextActive]}>
+            📰 Feed
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.viewToggleBtn, viewMode === 'map' && styles.viewToggleBtnActive]}
+          onPress={() => setViewMode('map')}
+        >
+          <Text style={[styles.viewToggleText, { fontFamily: sansFont }, viewMode === 'map' && styles.viewToggleTextActive]}>
+            🗺️ Map
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-          <View style={styles.chipsRow}>
+      {/* ── MAP VIEW ─────────────────────────────────────────────────────── */}
+      {viewMode === 'map' ? (
+        <View style={styles.mapContainer}>
+          {/* Chips still apply in map mode */}
+          <View style={styles.mapChipsRow}>
             <TouchableOpacity
               style={[styles.chipPill, timeTypeFilter === 'timed' && styles.chipActive]}
               onPress={() => setTimeTypeFilter(timeTypeFilter === 'timed' ? 'all' : 'timed')}
             >
-              <Text style={[styles.chipText, { fontFamily: sansFont }, timeTypeFilter === 'timed' && styles.chipTextActive]}>
-                ⏰ Timed Events
-              </Text>
+              <Text style={[styles.chipText, { fontFamily: sansFont }, timeTypeFilter === 'timed' && styles.chipTextActive]}>⏰ Timed</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={[styles.chipPill, timeTypeFilter === 'untimed' && styles.chipActive]}
               onPress={() => setTimeTypeFilter(timeTypeFilter === 'untimed' ? 'all' : 'untimed')}
             >
-              <Text style={[styles.chipText, { fontFamily: sansFont }, timeTypeFilter === 'untimed' && styles.chipTextActive]}>
-                📍 Anytime Spots
-              </Text>
+              <Text style={[styles.chipText, { fontFamily: sansFont }, timeTypeFilter === 'untimed' && styles.chipTextActive]}>📍 Spots</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.chipPill, dateFilter === 'weekend' && styles.chipActive]}
-              onPress={() => setDateFilter(dateFilter === 'weekend' ? 'all' : 'weekend')}
-            >
-              <Text style={[styles.chipText, { fontFamily: sansFont }, dateFilter === 'weekend' && styles.chipTextActive]}>
-                This Weekend
-              </Text>
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={[styles.chipPill, freeOnly && styles.chipActive]}
               onPress={() => setFreeOnly(!freeOnly)}
             >
-              <Text style={[styles.chipText, { fontFamily: sansFont }, freeOnly && styles.chipTextActive]}>
-                {freeOnly ? '✓ Free' : 'Free'}
-              </Text>
+              <Text style={[styles.chipText, { fontFamily: sansFont }, freeOnly && styles.chipTextActive]}>{freeOnly ? '✓ Free' : 'Free'}</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={[styles.filterSheetBtn, hasActiveFilterSheet && styles.filterSheetActive]}
               onPress={() => setShowFilterSheet(true)}
@@ -219,56 +220,140 @@ export const DiscoverScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
 
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.ink} />
-            <Text style={[styles.loadingText, { fontFamily: sansFont }]}>Curating cohort events & spots around the Triangle...</Text>
-          </View>
-        ) : (
-          <View style={styles.altWeeklyLayout}>
-            {featuredEvent ? (
-              <FeaturedEventCard
-                event={featuredEvent}
-                onPress={(item) => setActiveModalEvent(item)}
-                onToggleAttendance={handleToggleAttendance}
-              />
-            ) : null}
-
-            <FriendActivityRow
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.ink} />
+              <Text style={[styles.loadingText, { fontFamily: sansFont }]}>Loading map pins...</Text>
+            </View>
+          ) : (
+            <MapView
               events={events}
               onSelectEvent={(item) => setActiveModalEvent(item)}
             />
-
-            <View style={styles.sectionHeaderBar}>
-              <Text style={[styles.sectionHeadline, { fontFamily: displayFont }]}>{sectionTitle}</Text>
+          )}
+        </View>
+      ) : (
+        /* ── FEED VIEW ───────────────────────────────────────────────────── */
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.ink} />}
+        >
+          <View style={styles.discoveryToolbar}>
+            <View style={styles.searchBox}>
+              <TextInput
+                style={[styles.searchInput, { fontFamily: sansFont }]}
+                placeholder="Search events, spots, or activities..."
+                placeholderTextColor={colors.muted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery ? (
+                <TouchableOpacity style={styles.clearSearch} onPress={() => setSearchQuery('')}>
+                  <Text style={styles.clearSearchText}>✕</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
 
-            {feedEvents.length > 0 ? (
-              feedEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
+            <View style={styles.chipsRow}>
+              <TouchableOpacity
+                style={[styles.chipPill, timeTypeFilter === 'timed' && styles.chipActive]}
+                onPress={() => setTimeTypeFilter(timeTypeFilter === 'timed' ? 'all' : 'timed')}
+              >
+                <Text style={[styles.chipText, { fontFamily: sansFont }, timeTypeFilter === 'timed' && styles.chipTextActive]}>
+                  ⏰ Timed Events
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.chipPill, timeTypeFilter === 'untimed' && styles.chipActive]}
+                onPress={() => setTimeTypeFilter(timeTypeFilter === 'untimed' ? 'all' : 'untimed')}
+              >
+                <Text style={[styles.chipText, { fontFamily: sansFont }, timeTypeFilter === 'untimed' && styles.chipTextActive]}>
+                  📍 Anytime Spots
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.chipPill, dateFilter === 'weekend' && styles.chipActive]}
+                onPress={() => setDateFilter(dateFilter === 'weekend' ? 'all' : 'weekend')}
+              >
+                <Text style={[styles.chipText, { fontFamily: sansFont }, dateFilter === 'weekend' && styles.chipTextActive]}>
+                  This Weekend
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.chipPill, freeOnly && styles.chipActive]}
+                onPress={() => setFreeOnly(!freeOnly)}
+              >
+                <Text style={[styles.chipText, { fontFamily: sansFont }, freeOnly && styles.chipTextActive]}>
+                  {freeOnly ? '✓ Free' : 'Free'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.filterSheetBtn, hasActiveFilterSheet && styles.filterSheetActive]}
+                onPress={() => setShowFilterSheet(true)}
+              >
+                <Text style={[styles.filterSheetText, { fontFamily: sansFont }, hasActiveFilterSheet && styles.filterSheetTextActive]}>
+                  {selectedCity !== 'All' ? `📍 ${selectedCity}` : 'Filters ⚙'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.ink} />
+              <Text style={[styles.loadingText, { fontFamily: sansFont }]}>Curating cohort events & spots around the Triangle...</Text>
+            </View>
+          ) : (
+            <View style={styles.altWeeklyLayout}>
+              {featuredEvent ? (
+                <FeaturedEventCard
+                  event={featuredEvent}
                   onPress={(item) => setActiveModalEvent(item)}
                   onToggleAttendance={handleToggleAttendance}
                 />
-              ))
-            ) : !featuredEvent ? (
-              <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyTitle, { fontFamily: displayFont }]}>No listings found</Text>
-                <Text style={[styles.emptySubtitle, { fontFamily: sansFont }]}>
-                  Try clearing your search or filters, or post a new spot for your cohort!
-                </Text>
-                <TouchableOpacity style={styles.resetLink} onPress={resetFilters}>
-                  <Text style={[styles.resetLinkText, { fontFamily: sansFont }]}>Clear all filters</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
-          </View>
-        )}
-      </ScrollView>
+              ) : null}
 
+              <FriendActivityRow
+                events={events}
+                onSelectEvent={(item) => setActiveModalEvent(item)}
+              />
+
+              <View style={styles.sectionHeaderBar}>
+                <Text style={[styles.sectionHeadline, { fontFamily: displayFont }]}>{sectionTitle}</Text>
+              </View>
+
+              {feedEvents.length > 0 ? (
+                feedEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    onPress={(item) => setActiveModalEvent(item)}
+                    onToggleAttendance={handleToggleAttendance}
+                  />
+                ))
+              ) : !featuredEvent ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={[styles.emptyTitle, { fontFamily: displayFont }]}>No listings found</Text>
+                  <Text style={[styles.emptySubtitle, { fontFamily: sansFont }]}>
+                    Try clearing your search or filters, or post a new spot for your cohort!
+                  </Text>
+                  <TouchableOpacity style={styles.resetLink} onPress={resetFilters}>
+                    <Text style={[styles.resetLinkText, { fontFamily: sansFont }]}>Clear all filters</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+          )}
+        </ScrollView>
+      )}
+
+      {/* ── Modals ───────────────────────────────────────────────────────── */}
       <FilterSheetModal
         visible={showFilterSheet}
         onClose={() => setShowFilterSheet(false)}
@@ -350,6 +435,49 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
+  // View toggle
+  viewToggleBar: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 4,
+    backgroundColor: colors.surface,
+    borderRadius: radii.button,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: colors.borderRule,
+  },
+  viewToggleBtn: {
+    flex: 1,
+    paddingVertical: 7,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  viewToggleBtnActive: {
+    backgroundColor: colors.ink,
+  },
+  viewToggleText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.muted,
+  },
+  viewToggleTextActive: {
+    color: colors.paper,
+  },
+  // Map container
+  mapContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+  },
+  mapChipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+  // Discovery toolbar
   discoveryToolbar: {
     marginVertical: 10,
   },
