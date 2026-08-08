@@ -1,0 +1,58 @@
+# .gitignore for the triangle-app project
+# ==============================
+# General OS / IDE / editor artefacts
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+*.tmp
+*.bak
+
+# Python specific
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.dist-info/
+build/
+**/env/
+**/venv/
+**/.venv/
+ENV/
+
+# Python test artefacts
+**/.pytest_cache/
+**/htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# SQLite / local DB files (development only)
+*.sqlite3
+*.db
+triangle_events.db
+
+# Node / JavaScript / Expo / React Native
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+pnpm-lock.yaml
+.yarn/
+**/.expo/
+**/.expo-shared/
+**/.expo-web/
+**/web-build/
+**/dist/
+
+# Secrets / environment files
+.env
+.env.*
+
+# Miscellaneous
+*.pem
+*.key
+*.crt
