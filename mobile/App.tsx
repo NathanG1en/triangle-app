@@ -95,7 +95,11 @@ const styles = StyleSheet.create({
     maxWidth: 600, // Mobile viewport frame centered on wide desktop monitors
     alignSelf: 'center',
     backgroundColor: colors.paper,
-    boxShadow: Platform.OS === 'web' ? '0px 0px 30px rgba(0,0,0,0.1)' : undefined,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 30,
+    elevation: 5,
   },
   contentContainer: {
     flex: 1,

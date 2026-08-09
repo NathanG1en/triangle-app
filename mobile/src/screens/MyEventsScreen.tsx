@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 4,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   tabBtn: {
     flex: 1,
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   emptyText: {
     fontFamily: typography.displayFont,

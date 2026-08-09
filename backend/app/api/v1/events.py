@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 
 from app.core.database import get_db
-from app.models.events import Event, Attendance, User
-from app.schemas.events import EventResponse, EventCreate, AttendanceRequest, EventCandidate
+from app.models.events import Event, Attendance, User, Notification
+from app.schemas.events import EventResponse, EventCreate, AttendanceRequest, EventCandidate, EventPhotoUpdate
 from app.ingestion.pipeline import parse_durham_lowdown_sample, IngestionPipeline
 
 router = APIRouter()
@@ -242,4 +242,37 @@ def toggle_user_attendance(
             db.add(new_att)
         db.commit()
 
+    # Generate FRIEND_RSVP notifications for other attendees
+    if payload.status != "NONE":
+        other_attendees = db.query(Attendance).filter(
+            and_(Attendance.event_id == event_id, Attendance.user_id != payload.user_id)
+        ).all()
+        for other_att in other_attendees:
+            notif = Notification(
+                user_id=other_att.user_id,
+                notif_type="FRIEND_RSVP",
+                title=f"{payload.user_name} is {payload.status.lower()} for {event.title}!",
+                body=f"{payload.user_name} just RSVP'd {payload.status} to {event.title}. Your cohort is showing up!",
+                event_id=event_id,
+            )
+            db.add(notif)
+        db.commit()
+
     return build_event_response(event, db, payload.user_id)
+
+
+@router.patch("/events/{event_id}/photo", response_model=EventResponse)
+def update_event_photo(
+    event_id: int,
+    payload: EventPhotoUpdate,
+    current_user_id: str = Query(default="user_1"),
+    db: Session = Depends(get_db)
+):
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    event.image_url = payload.image_url.strip()
+    db.commit()
+    db.refresh(event)
+    return build_event_response(event, db, current_user_id)

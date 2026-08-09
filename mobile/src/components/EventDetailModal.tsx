@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, Linking } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, Linking, TextInput, ActivityIndicator } from 'react-native';
 import { EventItem } from '../types';
 import { colors, radii } from '../theme/colors';
 import { useFontTheme } from '../theme/typography';
+import { updateEventPhoto } from '../services/api';
 
 interface EventDetailModalProps {
   event: EventItem | null;
@@ -23,8 +24,27 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 }) => {
   const { displayFont, sansFont } = useFontTheme();
   const [attendeeTab, setAttendeeTab] = useState<'ALL' | 'GOING' | 'INTERESTED'>('ALL');
+  const [shareToast, setShareToast] = useState<boolean>(false);
+  const [showPhotoPicker, setShowPhotoPicker] = useState<boolean>(false);
+  const [photoUrlInput, setPhotoUrlInput] = useState<string>('');
+  const [updatingPhoto, setUpdatingPhoto] = useState<boolean>(false);
 
   if (!event) return null;
+
+  const handleSavePhoto = async (newUrl: string) => {
+    if (!newUrl.trim()) return;
+    setUpdatingPhoto(true);
+    try {
+      const updated = await updateEventPhoto(event.id, newUrl.trim());
+      event.image_url = updated.image_url;
+      setShowPhotoPicker(false);
+      setPhotoUrlInput('');
+    } catch (err) {
+      alert('Failed to update event photo');
+    } finally {
+      setUpdatingPhoto(false);
+    }
+  };
 
   const isGoing = event.user_attendance_status === 'GOING';
   const isInterested = event.user_attendance_status === 'INTERESTED';
@@ -39,6 +59,29 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     if (event.source_url) {
       Linking.openURL(event.source_url);
     }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}?event=${event.id}`
+      : `https://trianglesocial.app/?event=${event.id}`;
+
+    if (typeof navigator !== 'undefined' && (navigator as any).share) {
+      try {
+        await (navigator as any).share({
+          title: event.title,
+          text: `Check out "${event.title}" on Triangle Social!`,
+          url: shareUrl,
+        });
+        return;
+      } catch {}
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(shareUrl);
+    }
+    setShareToast(true);
+    setTimeout(() => setShareToast(false), 3000);
   };
 
   const filteredAttendees = (event.attendees || []).filter((a) => {
@@ -83,6 +126,56 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     {isSpotSuggestion ? 'SPOT' : event.category.toUpperCase()}
                   </Text>
                 </View>
+                <TouchableOpacity
+                  style={styles.changePhotoSticker}
+                  onPress={() => setShowPhotoPicker(!showPhotoPicker)}
+                >
+                  <Text style={[styles.changePhotoText, { fontFamily: sansFont }]}>📷 Change Photo</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
+            {/* Photo Picker Drawer */}
+            {showPhotoPicker ? (
+              <View style={styles.photoPickerBox}>
+                <Text style={[styles.photoPickerTitle, { fontFamily: sansFont }]}>
+                  Choose Venue Photo Preset or Enter Custom Image URL:
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoPresetsRow}>
+                  {[
+                    { label: '⚾ Stadium', url: 'https://images.unsplash.com/photo-1508344928928-7165b67de128?w=800' },
+                    { label: '🍺 Brewery', url: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800' },
+                    { label: '🕹 Arcade', url: 'https://images.unsplash.com/photo-1511882150382-421056c89033?w=800' },
+                    { label: '🌮 Food Hall', url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800' },
+                    { label: '🎨 Art Museum', url: 'https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=800' },
+                    { label: '🌲 Park Trail', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800' },
+                    { label: '☕ Books & Cafe', url: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800' },
+                  ].map((p) => (
+                    <TouchableOpacity
+                      key={p.label}
+                      style={styles.photoPresetChip}
+                      onPress={() => handleSavePhoto(p.url)}
+                    >
+                      <Text style={[styles.photoPresetText, { fontFamily: sansFont }]}>{p.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <View style={styles.urlInputRow}>
+                  <TextInput
+                    style={[styles.urlInput, { fontFamily: sansFont }]}
+                    placeholder="Paste custom image URL (https://...)"
+                    placeholderTextColor={colors.muted}
+                    value={photoUrlInput}
+                    onChangeText={setPhotoUrlInput}
+                  />
+                  <TouchableOpacity style={styles.saveUrlBtn} onPress={() => handleSavePhoto(photoUrlInput)}>
+                    {updatingPhoto ? (
+                      <ActivityIndicator size="small" color={colors.paper} />
+                    ) : (
+                      <Text style={[styles.saveUrlText, { fontFamily: sansFont }]}>Save</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : null}
 
@@ -111,15 +204,27 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   <Text style={[styles.mapBtnText, { fontFamily: sansFont }]}>Open Maps →</Text>
                 </TouchableOpacity>
 
+                <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
+                  <Text style={[styles.shareBtnText, { fontFamily: sansFont }]}>🔗 Share Plan</Text>
+                </TouchableOpacity>
+
                 {!isSpotSuggestion && onOpenCalendarModal ? (
                   <TouchableOpacity
                     style={styles.calBtn}
                     onPress={() => onOpenCalendarModal(event)}
                   >
-                    <Text style={[styles.calBtnText, { fontFamily: sansFont }]}>📅 Add to Calendar</Text>
+                    <Text style={[styles.calBtnText, { fontFamily: sansFont }]}>📅 Calendar</Text>
                   </TouchableOpacity>
                 ) : null}
               </View>
+
+              {shareToast ? (
+                <View style={styles.shareToastBanner}>
+                  <Text style={[styles.shareToastText, { fontFamily: sansFont }]}>
+                    ✓ Share link copied to clipboard!
+                  </Text>
+                </View>
+              ) : null}
             </View>
 
             {/* Propose Date & Time Card for Spots */}
@@ -341,6 +446,85 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.8,
   },
+  changePhotoSticker: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    backgroundColor: 'rgba(26, 26, 26, 0.75)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.button,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  changePhotoText: {
+    color: colors.paper,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  // Photo Picker Drawer
+  photoPickerBox: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.button,
+    padding: 12,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.borderRule,
+  },
+  photoPickerTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.coral,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  photoPresetsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 10,
+  },
+  photoPresetChip: {
+    backgroundColor: colors.paper,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radii.button,
+    borderWidth: 1,
+    borderColor: colors.borderRule,
+  },
+  photoPresetText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  urlInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  urlInput: {
+    flex: 1,
+    backgroundColor: colors.paper,
+    color: colors.ink,
+    borderRadius: radii.button,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    fontSize: 12,
+    borderWidth: 1,
+    borderColor: colors.borderRule,
+  },
+  saveUrlBtn: {
+    backgroundColor: colors.ink,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: radii.button,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveUrlText: {
+    color: colors.paper,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   serifTitle: {
     fontSize: 24,
     lineHeight: 30,
@@ -393,6 +577,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   locationActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
   mapBtn: {
@@ -402,11 +588,35 @@ const styles = StyleSheet.create({
     borderRadius: radii.button,
     borderWidth: 1,
     borderColor: colors.ink,
-    alignItems: 'center',
   },
   mapBtnText: {
     color: colors.ink,
     fontSize: 11,
+    fontWeight: '700',
+  },
+  shareBtn: {
+    backgroundColor: colors.sand,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.button,
+    borderWidth: 1,
+    borderColor: colors.coral,
+  },
+  shareBtnText: {
+    color: colors.ink,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  shareToastBanner: {
+    backgroundColor: colors.forest,
+    padding: 8,
+    borderRadius: radii.button,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  shareToastText: {
+    color: colors.paper,
+    fontSize: 12,
     fontWeight: '700',
   },
   calBtn: {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { EventItem, EventCreatePayload } from '../types';
-import { fetchEvents, toggleAttendance, createCommunityEvent } from '../services/api';
+import { fetchEvents, toggleAttendance, createCommunityEvent, fetchEventById } from '../services/api';
 import { colors, radii } from '../theme/colors';
 import { useFontTheme } from '../theme/typography';
 import { Header } from '../components/Header';
@@ -15,6 +15,7 @@ import { IngestionModal } from '../components/IngestionModal';
 import { CalendarExportModal } from '../components/CalendarExportModal';
 import { ProposeSpotPlanModal } from '../components/ProposeSpotPlanModal';
 import { MapView } from '../components/MapView';
+import { NotificationPanel } from '../components/NotificationPanel';
 
 type ViewMode = 'feed' | 'map';
 
@@ -42,6 +43,8 @@ export const DiscoverScreen: React.FC = () => {
 
   const [proposeTargetSpot, setProposeTargetSpot] = useState<EventItem | null>(null);
   const [showProposeModal, setShowProposeModal] = useState<boolean>(false);
+  const [showNotificationPanel, setShowNotificationPanel] = useState<boolean>(false);
+  const [unreadNotifCount, setUnreadNotifCount] = useState<number>(0);
 
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
 
@@ -64,9 +67,41 @@ export const DiscoverScreen: React.FC = () => {
     }
   }, [selectedCity, selectedCategory, searchQuery, dateFilter, freeOnly, timeTypeFilter]);
 
+  const fetchUnreadNotifs = useCallback(async () => {
+    try {
+      await fetch('http://localhost:8000/api/v1/notifications/generate-reminders?user_id=user_1', { method: 'POST' });
+      const res = await fetch('http://localhost:8000/api/v1/notifications/unread-count?user_id=user_1');
+      if (res.ok) {
+        const data = await res.json();
+        setUnreadNotifCount(data.unread_count || 0);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch unread notifs:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadEvents();
-  }, [loadEvents]);
+    fetchUnreadNotifs();
+  }, [loadEvents, fetchUnreadNotifs]);
+
+  // Deep Link Resolution: auto-open shared event if ?event=123 is present in URL
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const eventIdParam = searchParams.get('event') || searchParams.get('event_id');
+    if (eventIdParam) {
+      const id = parseInt(eventIdParam, 10);
+      if (!isNaN(id)) {
+        fetchEventById(id).then((foundEvent) => {
+          if (foundEvent) {
+            setActiveModalEvent(foundEvent);
+            showBanner(`🔗 Opened shared plan: "${foundEvent.title}"`);
+          }
+        });
+      }
+    }
+  }, []);
 
   // Listen for postMessage from map iframe pin clicks
   useEffect(() => {
@@ -160,6 +195,8 @@ export const DiscoverScreen: React.FC = () => {
           setCalendarTargetEvent(null);
           setShowCalendarModal(true);
         }}
+        onOpenNotifications={() => setShowNotificationPanel(true)}
+        unreadNotifCount={unreadNotifCount}
       />
 
       {bannerMessage ? (
@@ -406,6 +443,18 @@ export const DiscoverScreen: React.FC = () => {
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreateEvent}
+      />
+
+      <NotificationPanel
+        visible={showNotificationPanel}
+        onClose={() => {
+          setShowNotificationPanel(false);
+          fetchUnreadNotifs();
+        }}
+        onSelectEvent={(eventId) => {
+          const found = events.find((ev) => ev.id === eventId);
+          if (found) setActiveModalEvent(found);
+        }}
       />
     </View>
   );

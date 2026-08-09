@@ -48,6 +48,17 @@ export async function fetchEvents(filters: {
   }
 }
 
+export async function fetchEventById(eventId: number): Promise<EventItem | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}?current_user_id=${currentUser.id}`);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (err) {
+    console.error(`Error fetching event ${eventId}:`, err);
+    return null;
+  }
+}
+
 export async function toggleAttendance(
   eventId: number,
   status: 'INTERESTED' | 'GOING' | 'NONE'
@@ -92,6 +103,21 @@ export async function createCommunityEvent(payload: EventCreatePayload): Promise
   }
 }
 
+export async function updateEventPhoto(eventId: number, imageUrl: string): Promise<EventItem> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/photo`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url: imageUrl }),
+    });
+    if (!response.ok) throw new Error('Failed to update event photo');
+    return await response.json();
+  } catch (err) {
+    console.error('Update photo error:', err);
+    throw err;
+  }
+}
+
 export async function triggerLiveIngestion(): Promise<any> {
   try {
     const response = await fetch(`${API_BASE_URL}/ingestion/trigger`, {
@@ -123,6 +149,41 @@ export async function fetchIngestionSources(): Promise<IngestionSourceStatus[]> 
 
 export async function triggerSampleIngestion(): Promise<EventItem[]> {
   return triggerLiveIngestion();
+}
+
+export interface PlaceSuggestion {
+  venue_name: string;
+  address: string;
+  city: string;
+  category: string;
+  image_url: string;
+}
+
+export async function fetchPlaceAutocomplete(query: string): Promise<PlaceSuggestion[]> {
+  if (!query || query.trim().length < 2) return [];
+  try {
+    const res = await fetch(`${API_BASE_URL}/places/autocomplete?query=${encodeURIComponent(query.trim())}`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    console.error('Autocomplete error:', err);
+    return [];
+  }
+}
+
+export async function resolveVenuePhoto(venue: string, city?: string, category?: string): Promise<string> {
+  try {
+    const params = new URLSearchParams();
+    if (venue) params.append('venue_name', venue);
+    if (city) params.append('city', city);
+    if (category) params.append('category', category);
+    const res = await fetch(`${API_BASE_URL}/places/resolve-photo?${params.toString()}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.image_url;
+    }
+  } catch (err) {}
+  return 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800';
 }
 
 function getFallbackEvents(filters: any): EventItem[] {

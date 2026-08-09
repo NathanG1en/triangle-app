@@ -75,3 +75,20 @@ class AttendanceRequest(BaseModel):
     user_name: str
     user_avatar: Optional[str] = None
     status: str  # 'INTERESTED', 'GOING', or 'NONE' (to remove)
+
+
+class NotificationResponse(BaseModel):
+    id: int
+    user_id: str
+    notif_type: str
+    title: str
+    body: Optional[str] = None
+    event_id: Optional[int] = None
+    is_read: bool = False
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EventPhotoUpdate(BaseModel):
+    image_url: str

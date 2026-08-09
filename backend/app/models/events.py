@@ -60,3 +60,16 @@ class User(Base):
     cohort_year = Column(String(20), default="2026")
     company = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(100), nullable=False, index=True)
+    notif_type = Column(String(50), nullable=False)  # EVENT_REMINDER_2H, EVENT_REMINDER_24H, FRIEND_RSVP, NEW_PLAN_POSTED
+    title = Column(String(255), nullable=False)
+    body = Column(Text, nullable=True)
+    event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=True)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

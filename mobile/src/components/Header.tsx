@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { colors, radii } from '../theme/colors';
 import { useFontTheme } from '../theme/typography';
@@ -8,9 +8,17 @@ interface HeaderProps {
   onOpenCreate: () => void;
   onOpenIngestion: () => void;
   onOpenSyncCalendar?: () => void;
+  onOpenNotifications?: () => void;
+  unreadNotifCount?: number;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenCreate, onOpenIngestion, onOpenSyncCalendar }) => {
+export const Header: React.FC<HeaderProps> = ({
+  onOpenCreate,
+  onOpenIngestion,
+  onOpenSyncCalendar,
+  onOpenNotifications,
+  unreadNotifCount = 0,
+}) => {
   const { displayFont, sansFont } = useFontTheme();
 
   return (
@@ -21,6 +29,20 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCreate, onOpenIngestion, o
       </View>
 
       <View style={styles.rightActions}>
+        {/* Notification bell */}
+        {onOpenNotifications ? (
+          <TouchableOpacity style={styles.bellBtn} onPress={onOpenNotifications}>
+            <Text style={styles.bellIcon}>🔔</Text>
+            {unreadNotifCount > 0 ? (
+              <View style={styles.bellBadge}>
+                <Text style={[styles.bellBadgeText, { fontFamily: sansFont }]}>
+                  {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                </Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+        ) : null}
+
         {onOpenSyncCalendar ? (
           <TouchableOpacity style={styles.calSyncBtn} onPress={onOpenSyncCalendar}>
             <Text style={[styles.calSyncBtnText, { fontFamily: sansFont }]}>📅 Sync Cal</Text>
@@ -72,6 +94,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  // Bell
+  bellBtn: {
+    position: 'relative',
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.button,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderRule,
+  },
+  bellIcon: {
+    fontSize: 15,
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.coral,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: colors.paper,
+  },
+  bellBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.paper,
   },
   calSyncBtn: {
     backgroundColor: colors.sand,

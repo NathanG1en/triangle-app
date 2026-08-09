@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   avatar: {
     width: 80,
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   badgeText: {
     fontFamily: typography.sansFont,
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   statNum: {
     fontFamily: typography.sansFont,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   sectionTitle: {
     fontFamily: typography.displayFont,
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   prefChipText: {
     fontFamily: typography.sansFont,
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colors.ticketBorder,
+    borderBottomColor: colors.borderRule,
   },
   menuText: {
     fontFamily: typography.sansFont,

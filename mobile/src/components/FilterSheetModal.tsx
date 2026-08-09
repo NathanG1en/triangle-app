@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   closeBtnText: {
     color: colors.ink,
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   activePillChip: {
     backgroundColor: colors.ink,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: radii.button,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
     alignItems: 'center',
   },
   activePriceRow: {
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: colors.ticketBorder,
+    borderTopColor: colors.borderRule,
   },
   resetBtn: {
     flex: 1,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.ticketBorder,
+    borderColor: colors.borderRule,
   },
   resetBtnText: {
     fontSize: 13,

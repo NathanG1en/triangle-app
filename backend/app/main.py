@@ -4,6 +4,8 @@ from app.core.database import Base, engine
 from app.api.v1.events import router as events_router
 from app.api.v1.ingestion import router as ingestion_router
 from app.api.v1.calendar import router as calendar_router
+from app.api.v1.notifications import router as notifications_router
+from app.api.v1.places import router as places_router
 from app.services.seed_data import seed_database
 
 # Create tables on startup
@@ -27,10 +29,16 @@ app.add_middleware(
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(ingestion_router, prefix="/api/v1/ingestion")
 app.include_router(calendar_router, prefix="/api/v1/calendar")
+app.include_router(notifications_router, prefix="/api/v1")
+app.include_router(places_router, prefix="/api/v1")
 
 @app.get("/health", tags=["Health"])
 def health_check():
     return {"status": "ok", "service": "triangle-events-api", "version": "1.0.0"}
+
+@app.get("/", tags=["Root"])
+def read_root():
+    return {"message": "Triangle Social Events API is running. Visit /docs for the API schema."}
 
 @app.on_event("startup")
 def on_startup():
