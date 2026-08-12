@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Triangle Cohort Events",
-    "slug": "triangle-social-events",
+    "slug": "motion-planner",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We use your location to show events and spots happening near you in the Triangle.",
         "NSPhotoLibraryUsageDescription": "Allows you to select photos for custom event plans.",
-        "NSCameraUsageDescription": "Allows you to capture photos for your event posts."
+        "NSCameraUsageDescription": "Allows you to capture photos for your event posts.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -29,6 +30,12 @@
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "495e904d-f278-4ae6-8b12-8870d283865d"
+      }
+    },
+    "owner": "neng1ens-team"
   }
 }

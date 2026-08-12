@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, RefreshControl, ActivityIndicator, Platform } from 'react-native';
 import { EventItem, EventCreatePayload } from '../types';
-import { fetchEvents, toggleAttendance, createCommunityEvent, fetchEventById } from '../services/api';
+import { fetchEvents, toggleAttendance, createCommunityEvent, fetchEventById, API_BASE_URL } from '../services/api';
 import { colors, radii } from '../theme/colors';
 import { useFontTheme } from '../theme/typography';
 import { Header } from '../components/Header';
@@ -87,7 +87,7 @@ export const DiscoverScreen: React.FC = () => {
 
   // Deep Link Resolution: auto-open shared event if ?event=123 is present in URL
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.location) return;
     const searchParams = new URLSearchParams(window.location.search);
     const eventIdParam = searchParams.get('event') || searchParams.get('event_id');
     if (eventIdParam) {
@@ -105,7 +105,7 @@ export const DiscoverScreen: React.FC = () => {
 
   // Listen for postMessage from map iframe pin clicks
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.addEventListener) return;
     const handler = (e: MessageEvent) => {
       if (e.data?.type === 'SELECT_EVENT') {
         const found = events.find((ev) => ev.id === e.data.eventId);

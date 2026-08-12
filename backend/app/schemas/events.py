@@ -119,3 +119,35 @@ class UserBlockCreate(BaseModel):
     blocker_user_id: str
     blocked_user_id: str
 
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    avatar_url: Optional[str] = None
+    cohort_year: Optional[str] = "2026"
+    company: Optional[str] = None
+    bio: Optional[str] = None
+    city: Optional[str] = "Durham"
+    interests: Optional[str] = "Outdoors, Food & Drink"
+    instagram_handle: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    cohort_year: Optional[str] = None
+    company: Optional[str] = None
+    bio: Optional[str] = None
+    city: Optional[str] = None
+    interests: Optional[str] = None
+    instagram_handle: Optional[str] = None
+
+
+class UserProfilePublicResponse(BaseModel):
+    user: UserResponse
+    created_events: List[EventResponse] = []
+    attending_events: List[EventResponse] = []

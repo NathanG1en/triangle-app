@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { colors, radii } from '../theme/colors';
 import { useFontTheme } from '../theme/typography';
+import { API_BASE_URL } from '../services/api';
 
 export interface NotificationItem {
   id: number;
@@ -20,7 +21,7 @@ interface NotificationPanelProps {
   onSelectEvent?: (eventId: number) => void;
 }
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = API_BASE_URL;
 
 const NOTIF_ICONS: Record<string, string> = {
   EVENT_REMINDER_2H:  '⏰',

@@ -1,6 +1,21 @@
 import { EventItem, EventCreatePayload } from '../types';
+import Constants from 'expo-constants';
 
-const API_BASE_URL = (process.env as any).EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const getLocalBackendUrl = (): string => {
+  if ((process.env as any).EXPO_PUBLIC_API_URL) {
+    return (process.env as any).EXPO_PUBLIC_API_URL;
+  }
+  const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest?.debuggerHost;
+  if (hostUri) {
+    const ip = hostUri.split(':')[0];
+    if (ip) {
+      return `http://${ip}:8000/api/v1`;
+    }
+  }
+  return 'http://localhost:8000/api/v1';
+};
+
+export const API_BASE_URL = getLocalBackendUrl();
 
 export const currentUser = {
   id: 'user_1',

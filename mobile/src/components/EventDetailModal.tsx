@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, Linking, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, Linking, TextInput, ActivityIndicator, Platform } from 'react-native';
 import { EventItem } from '../types';
 import { colors, radii } from '../theme/colors';
 import { useFontTheme } from '../theme/typography';
@@ -701,31 +701,29 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radii.button,
     padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    gap: 10,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.borderRule,
   },
   locationInfo: {
-    flex: 1,
-    marginRight: 10,
+    width: '100%',
   },
   venueTitle: {
     color: colors.ink,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
   },
   addressText: {
     color: colors.muted,
-    fontSize: 12,
+    fontSize: 13,
     marginTop: 2,
   },
   locationActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
   },
   mapBtn: {
     backgroundColor: colors.paper,

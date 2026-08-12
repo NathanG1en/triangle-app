@@ -59,6 +59,10 @@ class User(Base):
     avatar_url = Column(String(500), nullable=True)
     cohort_year = Column(String(20), default="2026")
     company = Column(String(100), nullable=True)
+    bio = Column(Text, nullable=True)
+    city = Column(String(100), nullable=True, default="Durham")
+    interests = Column(String(255), nullable=True, default="Outdoors, Food & Drink")
+    instagram_handle = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -80,11 +84,11 @@ class Report(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     reporter_user_id = Column(String(100), nullable=False, index=True)
-    target_event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=True, index=True)
-    target_user_id = Column(String(100), nullable=True, index=True)
-    reason = Column(String(100), nullable=False)  # SPAM, HARASSMENT, INAPPROPRIATE, MISLEADING, OTHER
+    target_event_id = Column(Integer, nullable=True)
+    target_user_id = Column(String(100), nullable=True)
+    reason = Column(String(50), nullable=False) # SPAM, HARASSMENT, INAPPROPRIATE, MISLEADING, OTHER
     details = Column(Text, nullable=True)
-    status = Column(String(20), default="PENDING")  # PENDING, RESOLVED, DISMISSED
+    status = Column(String(20), default="PENDING") # PENDING, REVIEWED, RESOLVED, DISMISSED
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -99,4 +103,3 @@ class UserBlock(Base):
     __table_args__ = (
         UniqueConstraint('blocker_user_id', 'blocked_user_id', name='_blocker_blocked_uc'),
     )
-

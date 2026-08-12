@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { EventItem } from '../types';
 import { colors, radii } from '../theme/colors';
 import { useFontTheme } from '../theme/typography';
@@ -187,7 +187,9 @@ export const MapView: React.FC<MapViewProps> = ({ events, onSelectEvent }) => {
                 if (found) onSelectEvent(found);
               }
             };
-            window.addEventListener('message', handler);
+            if (Platform.OS === 'web' && typeof window !== 'undefined' && window.addEventListener) {
+              window.addEventListener('message', handler);
+            }
           }}
         />
       </View>

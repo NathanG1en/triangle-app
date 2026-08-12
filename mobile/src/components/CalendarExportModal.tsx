@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, Linking, Clipboard } f
 import { EventItem } from '../types';
 import { colors, radii } from '../theme/colors';
 import { useFontTheme } from '../theme/typography';
+import { API_BASE_URL } from '../services/api';
 
 interface CalendarExportModalProps {
   event: EventItem | null;
@@ -10,7 +11,7 @@ interface CalendarExportModalProps {
   onClose: () => void;
 }
 
-const BACKEND_BASE_URL = 'http://localhost:8000/api/v1';
+const BACKEND_BASE_URL = API_BASE_URL;
 
 export const CalendarExportModal: React.FC<CalendarExportModalProps> = ({
   event,

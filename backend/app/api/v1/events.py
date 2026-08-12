@@ -11,6 +11,35 @@ from app.ingestion.pipeline import parse_durham_lowdown_sample, IngestionPipelin
 
 router = APIRouter()
 
+def advance_recurring_events(db: Session):
+    """Automatically roll forward recurring events whose start_at date has passed."""
+    now = datetime.utcnow()
+    past_recurring = db.query(Event).filter(
+        and_(
+            Event.recurrence_rule.isnot(None),
+            Event.start_at < now - timedelta(hours=2)
+        )
+    ).all()
+
+    for event in past_recurring:
+        rule = (event.recurrence_rule or "").upper()
+        if "WEEKLY" in rule:
+            days_step = 7
+        elif "BIWEEKLY" in rule:
+            days_step = 14
+        elif "MONTHLY" in rule:
+            days_step = 28
+        else:
+            days_step = 7
+
+        while event.start_at < now:
+            event.start_at = event.start_at + timedelta(days=days_step)
+            if event.end_at:
+                event.end_at = event.end_at + timedelta(days=days_step)
+
+    if past_recurring:
+        db.commit()
+
 def build_event_response(event: Event, db: Session, current_user_id: str = "user_1") -> EventResponse:
     attendances = db.query(Attendance).filter(Attendance.event_id == event.id).all()
     
@@ -48,15 +77,31 @@ def get_events(
     date_filter: Optional[str] = Query(default=None),
     free_only: bool = Query(default=False),
     time_type: Optional[str] = Query(default=None),
+    include_past: bool = Query(default=False),
     current_user_id: str = Query(default="user_1"),
     db: Session = Depends(get_db)
 ):
+    advance_recurring_events(db)
+
     query = db.query(Event)
 
     # Filter out events from blocked users
     blocked_user_ids = [b.blocked_user_id for b in db.query(UserBlock).filter(UserBlock.blocker_user_id == current_user_id).all()]
     if blocked_user_ids:
         query = query.filter(or_(Event.created_by_user_id.is_(None), Event.created_by_user_id.notin_(blocked_user_ids)))
+
+    # Exclude past timed events unless include_past=True (2-hour grace period for ongoing events)
+    now = datetime.utcnow()
+    if not include_past:
+        grace_period = now - timedelta(hours=2)
+        query = query.filter(
+            or_(
+                Event.is_suggestion == True,
+                Event.recurrence_rule.isnot(None),
+                Event.start_at >= grace_period,
+                and_(Event.end_at.isnot(None), Event.end_at >= grace_period)
+            )
+        )
 
     if city and city != "All":
         query = query.filter(Event.city.ilike(f"%{city}%"))
@@ -82,7 +127,6 @@ def get_events(
             )
         )
 
-    now = datetime.utcnow()
     if date_filter == "today":
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
@@ -116,6 +160,36 @@ def get_events(
 
     events = query.order_by(Event.start_at.asc()).all()
     return [build_event_response(e, db, current_user_id) for e in events]
+
+
+@router.post("/events/cleanup-past")
+def cleanup_past_events(
+    days_old: int = Query(default=30, ge=1),
+    db: Session = Depends(get_db)
+):
+    """Clean up old single-instance timed events that passed more than `days_old` days ago."""
+    now = datetime.utcnow()
+    cutoff = now - timedelta(days=days_old)
+
+    expired = db.query(Event).filter(
+        and_(
+            or_(Event.is_suggestion == False, Event.is_suggestion.is_(None)),
+            Event.recurrence_rule.is_(None),
+            Event.start_at < cutoff
+        )
+    ).all()
+
+    count = len(expired)
+    for e in expired:
+        db.delete(e)
+    db.commit()
+
+    return {
+        "status": "ok",
+        "cleaned_count": count,
+        "cutoff_date": cutoff.isoformat()
+    }
+
 
 @router.post("/events/ingest/sample-durham-newsletter", response_model=List[EventResponse])
 def trigger_sample_ingestion(
