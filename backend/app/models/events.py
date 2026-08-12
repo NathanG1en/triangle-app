@@ -73,3 +73,30 @@ class Notification(Base):
     event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=True)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Report(Base):
+    __tablename__ = "reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reporter_user_id = Column(String(100), nullable=False, index=True)
+    target_event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=True, index=True)
+    target_user_id = Column(String(100), nullable=True, index=True)
+    reason = Column(String(100), nullable=False)  # SPAM, HARASSMENT, INAPPROPRIATE, MISLEADING, OTHER
+    details = Column(Text, nullable=True)
+    status = Column(String(20), default="PENDING")  # PENDING, RESOLVED, DISMISSED
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UserBlock(Base):
+    __tablename__ = "user_blocks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    blocker_user_id = Column(String(100), nullable=False, index=True)
+    blocked_user_id = Column(String(100), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('blocker_user_id', 'blocked_user_id', name='_blocker_blocked_uc'),
+    )
+

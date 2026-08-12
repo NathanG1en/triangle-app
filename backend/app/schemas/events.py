@@ -92,3 +92,30 @@ class NotificationResponse(BaseModel):
 
 class EventPhotoUpdate(BaseModel):
     image_url: str
+
+
+class ReportCreate(BaseModel):
+    reporter_user_id: str
+    target_event_id: Optional[int] = None
+    target_user_id: Optional[str] = None
+    reason: str  # 'SPAM', 'HARASSMENT', 'INAPPROPRIATE', 'MISLEADING', 'OTHER'
+    details: Optional[str] = None
+
+
+class ReportResponse(BaseModel):
+    id: int
+    reporter_user_id: str
+    target_event_id: Optional[int] = None
+    target_user_id: Optional[str] = None
+    reason: str
+    details: Optional[str] = None
+    status: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserBlockCreate(BaseModel):
+    blocker_user_id: str
+    blocked_user_id: str
+

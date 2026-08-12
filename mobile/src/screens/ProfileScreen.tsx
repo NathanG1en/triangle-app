@@ -1,10 +1,39 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
-import { currentUser } from '../services/api';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
+import { currentUser, deleteAccount } from '../services/api';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 
 export const ProfileScreen: React.FC = () => {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [accountDeleted, setAccountDeleted] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteAccount();
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+      setAccountDeleted(true);
+    } catch (err) {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+      alert('Error deleting account. Please try again.');
+    }
+  };
+
+  if (accountDeleted) {
+    return (
+      <View style={styles.deletedContainer}>
+        <Text style={styles.deletedTitle}>Account Deleted</Text>
+        <Text style={styles.deletedSub}>
+          Your account and all associated personal data have been permanently removed from Triangle Cohort Events.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Profile Editorial Header Card */}
@@ -58,20 +87,63 @@ export const ProfileScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Account & Privacy</Text>
 
         <TouchableOpacity style={styles.menuRow}>
-          <Text style={styles.menuText}> Cohort Access Code</Text>
+          <Text style={styles.menuText}>Cohort Access Code</Text>
           <Text style={styles.menuSub}>RTP-GRAD-2026</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuRow}>
-          <Text style={styles.menuText}> Notification Digest</Text>
+          <Text style={styles.menuText}>Notification Digest</Text>
           <Text style={styles.menuSub}>Weekly (Fridays)</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuRow}>
-          <Text style={styles.menuText}> Attendance Visibility</Text>
+          <Text style={styles.menuText}>Attendance Visibility</Text>
           <Text style={styles.menuSub}>Cohort Only</Text>
         </TouchableOpacity>
+
+        {/* Apple App Store Guideline 5.1.1(v) Account Deletion */}
+        <TouchableOpacity
+          style={[styles.menuRow, { borderBottomWidth: 0, marginTop: 8 }]}
+          onPress={() => setShowDeleteModal(true)}
+        >
+          <Text style={[styles.menuText, { color: '#D95F4B', fontWeight: '700' }]}>🗑️ Delete Account</Text>
+          <Text style={[styles.menuSub, { color: '#D95F4B' }]}>Permanent</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal visible={showDeleteModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Delete Account?</Text>
+            <Text style={styles.modalBody}>
+              This will permanently delete your account, your RSVPs, custom plans, and all associated personal data from our servers. This action cannot be undone.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.deleteConfirmBtn}
+                onPress={handleDeleteAccount}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.deleteConfirmBtnText}>Delete Permanently</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -81,6 +153,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.paper,
     padding: 20,
+  },
+  deletedContainer: {
+    flex: 1,
+    backgroundColor: colors.paper,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  deletedTitle: {
+    fontFamily: typography.displayFont,
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.ink,
+    marginBottom: 10,
+  },
+  deletedSub: {
+    fontFamily: typography.sansFont,
+    fontSize: 14,
+    color: colors.muted,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   profileCard: {
     backgroundColor: colors.surface,
@@ -224,5 +317,68 @@ const styles = StyleSheet.create({
     fontFamily: typography.sansFont,
     color: colors.muted,
     fontSize: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: colors.paper,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+  },
+  modalTitle: {
+    fontFamily: typography.displayFont,
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.coral,
+    marginBottom: 10,
+  },
+  modalBody: {
+    fontFamily: typography.sansFont,
+    fontSize: 14,
+    color: colors.ink,
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
+  cancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderRule,
+  },
+  cancelBtnText: {
+    fontFamily: typography.sansFont,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink,
+  },
+  deleteConfirmBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: colors.coral,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteConfirmBtnText: {
+    fontFamily: typography.sansFont,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

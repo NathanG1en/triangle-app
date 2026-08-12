@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 
 from app.core.database import get_db
-from app.models.events import Event, Attendance, User, Notification
+from app.models.events import Event, Attendance, User, Notification, UserBlock
 from app.schemas.events import EventResponse, EventCreate, AttendanceRequest, EventCandidate, EventPhotoUpdate
 from app.ingestion.pipeline import parse_durham_lowdown_sample, IngestionPipeline
 
@@ -52,6 +52,11 @@ def get_events(
     db: Session = Depends(get_db)
 ):
     query = db.query(Event)
+
+    # Filter out events from blocked users
+    blocked_user_ids = [b.blocked_user_id for b in db.query(UserBlock).filter(UserBlock.blocker_user_id == current_user_id).all()]
+    if blocked_user_ids:
+        query = query.filter(or_(Event.created_by_user_id.is_(None), Event.created_by_user_id.notin_(blocked_user_ids)))
 
     if city and city != "All":
         query = query.filter(Event.city.ilike(f"%{city}%"))

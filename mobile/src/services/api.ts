@@ -1,6 +1,6 @@
 import { EventItem, EventCreatePayload } from '../types';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = (process.env as any).EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export const currentUser = {
   id: 'user_1',
@@ -10,6 +10,59 @@ export const currentUser = {
   company: 'Cisco / RTP',
   cohort_year: '2026'
 };
+
+export async function reportEvent(
+  targetEventId: number,
+  reason: 'SPAM' | 'HARASSMENT' | 'INAPPROPRIATE' | 'MISLEADING' | 'OTHER',
+  details?: string
+): Promise<{ id: number; status: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/moderation/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reporter_user_id: currentUser.id,
+        target_event_id: targetEventId,
+        reason,
+        details
+      })
+    });
+    if (!res.ok) throw new Error('Failed to submit report');
+    return await res.json();
+  } catch (err) {
+    console.error('Report error:', err);
+    throw err;
+  }
+}
+
+export async function blockUser(blockedUserId: string): Promise<void> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/moderation/block`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        blocker_user_id: currentUser.id,
+        blocked_user_id: blockedUserId
+      })
+    });
+    if (!res.ok) throw new Error('Failed to block user');
+  } catch (err) {
+    console.error('Block user error:', err);
+    throw err;
+  }
+}
+
+export async function deleteAccount(): Promise<void> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/me?user_id=${currentUser.id}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Failed to delete account');
+  } catch (err) {
+    console.error('Delete account error:', err);
+    throw err;
+  }
+}
 
 export interface IngestionSourceStatus {
   source_name: string;

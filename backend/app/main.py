@@ -6,6 +6,9 @@ from app.api.v1.ingestion import router as ingestion_router
 from app.api.v1.calendar import router as calendar_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.places import router as places_router
+from app.api.v1.moderation import router as moderation_router
+from app.api.v1.users import router as users_router
+from app.api.v1.legal import router as legal_router
 from app.services.seed_data import seed_database
 
 # Create tables on startup
@@ -31,6 +34,9 @@ app.include_router(ingestion_router, prefix="/api/v1/ingestion")
 app.include_router(calendar_router, prefix="/api/v1/calendar")
 app.include_router(notifications_router, prefix="/api/v1")
 app.include_router(places_router, prefix="/api/v1")
+app.include_router(moderation_router, prefix="/api/v1")
+app.include_router(users_router, prefix="/api/v1")
+app.include_router(legal_router, prefix="")
 
 @app.get("/health", tags=["Health"])
 def health_check():

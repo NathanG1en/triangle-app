@@ -25,6 +25,7 @@ export interface EventItem {
   source_type: string;
   external_id?: string;
   created_at: string;
+  created_by_user_id?: string;
   interested_count: number;
   going_count: number;
   user_attendance_status?: 'INTERESTED' | 'GOING' | null;

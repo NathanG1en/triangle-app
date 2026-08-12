@@ -4,13 +4,28 @@
     "slug": "triangle-social-events",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFEFD"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "org.trianglecohort.events"
+      "bundleIdentifier": "org.trianglecohort.events",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We use your location to show events and spots happening near you in the Triangle.",
+        "NSPhotoLibraryUsageDescription": "Allows you to select photos for custom event plans.",
+        "NSCameraUsageDescription": "Allows you to capture photos for your event posts."
+      }
     },
     "android": {
-      "package": "org.trianglecohort.events"
+      "package": "org.trianglecohort.events",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#D95F4B"
+      }
     },
     "web": {
       "bundler": "metro"

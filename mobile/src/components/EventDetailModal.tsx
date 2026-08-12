@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, Lin
 import { EventItem } from '../types';
 import { colors, radii } from '../theme/colors';
 import { useFontTheme } from '../theme/typography';
-import { updateEventPhoto } from '../services/api';
+import { updateEventPhoto, reportEvent, blockUser } from '../services/api';
 
 interface EventDetailModalProps {
   event: EventItem | null;
@@ -29,7 +29,46 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const [photoUrlInput, setPhotoUrlInput] = useState<string>('');
   const [updatingPhoto, setUpdatingPhoto] = useState<boolean>(false);
 
+  // Apple Guideline 1.2 UGC Moderation state
+  const [showReportModal, setShowReportModal] = useState<boolean>(false);
+  const [reportReason, setReportReason] = useState<'SPAM' | 'HARASSMENT' | 'INAPPROPRIATE' | 'MISLEADING' | 'OTHER'>('SPAM');
+  const [reportDetails, setReportDetails] = useState<string>('');
+  const [isReporting, setIsReporting] = useState<boolean>(false);
+  const [reportSuccess, setReportSuccess] = useState<boolean>(false);
+
+  const [isBlocking, setIsBlocking] = useState<boolean>(false);
+
   if (!event) return null;
+
+  const handleReportSubmit = async () => {
+    try {
+      setIsReporting(true);
+      await reportEvent(event.id, reportReason, reportDetails);
+      setIsReporting(false);
+      setReportSuccess(true);
+      setTimeout(() => {
+        setReportSuccess(false);
+        setShowReportModal(false);
+      }, 2000);
+    } catch (err) {
+      setIsReporting(false);
+      alert('Failed to submit report. Please try again.');
+    }
+  };
+
+  const handleBlockAuthor = async () => {
+    if (!event.created_by_user_id) return;
+    try {
+      setIsBlocking(true);
+      await blockUser(event.created_by_user_id);
+      setIsBlocking(false);
+      alert(`User blocked. You will no longer see content created by this user.`);
+      onClose();
+    } catch (err) {
+      setIsBlocking(false);
+      alert('Failed to block user.');
+    }
+  };
 
   const handleSavePhoto = async (newUrl: string) => {
     if (!newUrl.trim()) return;
@@ -348,8 +387,115 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 </Text>
               )}
             </View>
+
+            {/* Apple App Store Guideline 1.2 UGC Safety Actions */}
+            <View style={{ marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.borderRule, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                onPress={() => setShowReportModal(true)}
+              >
+                <Text style={{ fontSize: 12, color: colors.muted, fontFamily: sansFont }}>🚩 Report Plan</Text>
+              </TouchableOpacity>
+
+              {event.created_by_user_id ? (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                  onPress={handleBlockAuthor}
+                  disabled={isBlocking}
+                >
+                  <Text style={{ fontSize: 12, color: colors.coral, fontWeight: '600', fontFamily: sansFont }}>🚫 Block Author</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </ScrollView>
         </View>
+
+        {/* Report Content Modal */}
+        <Modal visible={showReportModal} transparent animationType="fade">
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <View style={{ backgroundColor: colors.paper, borderRadius: 16, padding: 20, width: '100%', maxWidth: 420, borderWidth: 1.5, borderColor: colors.ink }}>
+              {reportSuccess ? (
+                <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                  <Text style={{ fontSize: 28, marginBottom: 10 }}>✅</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '700', fontFamily: displayFont, color: colors.ink }}>Report Submitted</Text>
+                  <Text style={{ fontSize: 13, color: colors.muted, fontFamily: sansFont, textAlign: 'center', marginTop: 6 }}>
+                    Thank you. Our moderation team will review this content within 24 hours.
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={{ fontSize: 18, fontWeight: '700', fontFamily: displayFont, color: colors.ink, marginBottom: 8 }}>🚩 Report Objectionable Content</Text>
+                  <Text style={{ fontSize: 12, color: colors.muted, fontFamily: sansFont, marginBottom: 14 }}>
+                    Please select the reason for reporting "{event.title}".
+                  </Text>
+
+                  {(['SPAM', 'HARASSMENT', 'INAPPROPRIATE', 'MISLEADING', 'OTHER'] as const).map((reason) => (
+                    <TouchableOpacity
+                      key={reason}
+                      style={{
+                        paddingVertical: 10,
+                        paddingHorizontal: 12,
+                        borderRadius: radii.button,
+                        borderWidth: 1,
+                        borderColor: reportReason === reason ? colors.coral : colors.borderRule,
+                        backgroundColor: reportReason === reason ? colors.sand : colors.surface,
+                        marginBottom: 6,
+                      }}
+                      onPress={() => setReportReason(reason)}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: reportReason === reason ? '700' : '500', color: colors.ink, fontFamily: sansFont }}>
+                        {reason}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+
+                  <TextInput
+                    style={{
+                      backgroundColor: colors.surface,
+                      borderRadius: radii.button,
+                      borderWidth: 1,
+                      borderColor: colors.borderRule,
+                      padding: 10,
+                      fontSize: 13,
+                      fontFamily: sansFont,
+                      minHeight: 60,
+                      marginTop: 8,
+                      marginBottom: 16,
+                      color: colors.ink,
+                    }}
+                    placeholder="Additional details (optional)..."
+                    placeholderTextColor={colors.muted}
+                    multiline
+                    value={reportDetails}
+                    onChangeText={setReportDetails}
+                  />
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+                    <TouchableOpacity
+                      style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: radii.button, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderRule }}
+                      onPress={() => setShowReportModal(false)}
+                      disabled={isReporting}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.ink, fontFamily: sansFont }}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={{ paddingHorizontal: 18, paddingVertical: 10, borderRadius: radii.button, backgroundColor: colors.coral, alignItems: 'center', justifyContent: 'center' }}
+                      onPress={handleReportSubmit}
+                      disabled={isReporting}
+                    >
+                      {isReporting ? (
+                        <ActivityIndicator color="#FFFFFF" size="small" />
+                      ) : (
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF', fontFamily: sansFont }}>Submit Report</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+        </Modal>
       </View>
     </Modal>
   );
