@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+:root {
+  --font-display: 'Bricolage Grotesque', sans-serif;
+  --font-sans: 'Outfit', sans-serif;
+}
+
+body {
+  background-color: #020916;
+  color: #F8FAFC;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
