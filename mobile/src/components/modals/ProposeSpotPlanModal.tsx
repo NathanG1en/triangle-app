@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, ActivityIndicator } from 'react-native';
-import { EventItem, EventCreatePayload } from '../types';
-import { colors, radii } from '../theme/colors';
-import { useFontTheme } from '../theme/typography';
+import { EventItem, EventCreatePayload } from '../../types';
+import { colors, radii } from '../../theme/colors';
+import { useFontTheme } from '../../theme/typography';
 
 type RecurrenceRule = 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | null;
 

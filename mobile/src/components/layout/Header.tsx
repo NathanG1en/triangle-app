@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { colors, radii } from '../theme/colors';
-import { useFontTheme } from '../theme/typography';
-import { currentUser } from '../services/api';
+import { colors, radii } from '../../theme/colors';
+import { useFontTheme } from '../../theme/typography';
+import { currentUser } from '../../services/api';
 
 interface HeaderProps {
   onOpenCreate: () => void;

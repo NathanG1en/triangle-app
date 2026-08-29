@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Linking, Clipboard } from 'react-native';
-import { EventItem } from '../types';
-import { colors, radii } from '../theme/colors';
-import { useFontTheme } from '../theme/typography';
-import { API_BASE_URL } from '../services/api';
+import { EventItem } from '../../types';
+import { colors, radii } from '../../theme/colors';
+import { useFontTheme } from '../../theme/typography';
+import { API_BASE_URL } from '../../services/api';
 
 interface CalendarExportModalProps {
   event: EventItem | null;

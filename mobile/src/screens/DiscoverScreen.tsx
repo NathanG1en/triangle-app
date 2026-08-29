@@ -4,18 +4,21 @@ import { EventItem, EventCreatePayload } from '../types';
 import { fetchEvents, toggleAttendance, createCommunityEvent, fetchEventById, API_BASE_URL } from '../services/api';
 import { colors, radii } from '../theme/colors';
 import { useFontTheme } from '../theme/typography';
-import { Header } from '../components/Header';
-import { FeaturedEventCard } from '../components/FeaturedEventCard';
-import { FriendActivityRow } from '../components/FriendActivityRow';
-import { EventCard } from '../components/EventCard';
-import { EventDetailModal } from '../components/EventDetailModal';
-import { CreateEventModal } from '../components/CreateEventModal';
-import { FilterSheetModal } from '../components/FilterSheetModal';
-import { IngestionModal } from '../components/IngestionModal';
-import { CalendarExportModal } from '../components/CalendarExportModal';
-import { ProposeSpotPlanModal } from '../components/ProposeSpotPlanModal';
-import { MapView } from '../components/MapView';
-import { NotificationPanel } from '../components/NotificationPanel';
+import {
+  Header,
+  FeaturedEventCard,
+  FriendActivityRow,
+  EventCard,
+  EventDetailModal,
+  CreateEventModal,
+  FilterSheetModal,
+  IngestionModal,
+  CalendarExportModal,
+  ProposeSpotPlanModal,
+  MapView,
+  NotificationPanel
+} from '../components';
+import { getUrlSearchParams } from '../platform/web';
 
 type ViewMode = 'feed' | 'map';
 
@@ -87,8 +90,8 @@ export const DiscoverScreen: React.FC = () => {
 
   // Deep Link Resolution: auto-open shared event if ?event=123 is present in URL
   useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.location) return;
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = getUrlSearchParams();
+    if (!searchParams) return;
     const eventIdParam = searchParams.get('event') || searchParams.get('event_id');
     if (eventIdParam) {
       const id = parseInt(eventIdParam, 10);

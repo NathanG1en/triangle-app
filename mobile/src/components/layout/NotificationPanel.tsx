@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
-import { colors, radii } from '../theme/colors';
-import { useFontTheme } from '../theme/typography';
-import { API_BASE_URL } from '../services/api';
+import { colors, radii } from '../../theme/colors';
+import { useFontTheme } from '../../theme/typography';
+import { API_BASE_URL } from '../../services/api';
 
 export interface NotificationItem {
   id: number;

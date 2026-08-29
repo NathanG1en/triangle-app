@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
-import { colors, radii } from '../theme/colors';
-import { useFontTheme } from '../theme/typography';
-import { fetchIngestionSources, triggerLiveIngestion, IngestionSourceStatus } from '../services/api';
+import { colors, radii } from '../../theme/colors';
+import { useFontTheme } from '../../theme/typography';
+import { fetchIngestionSources, triggerLiveIngestion, IngestionSourceStatus } from '../../services/api';
 
 interface IngestionModalProps {
   visible: boolean;

@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { EventItem } from '../types';
-import { colors, radii } from '../theme/colors';
-import { useFontTheme } from '../theme/typography';
+import { EventItem } from '../../types';
+import { colors, radii } from '../../theme/colors';
+import { useFontTheme } from '../../theme/typography';
 
 // Known Triangle venue lat/lng lookup table (no geocoding API needed)
 const VENUE_COORDS: Record<string, { lat: number; lng: number }> = {

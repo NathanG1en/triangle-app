@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Image, ActivityIndicator } from 'react-native';
-import { EventCreatePayload } from '../types';
-import { colors, radii } from '../theme/colors';
-import { typography } from '../theme/typography';
-import { fetchPlaceAutocomplete, resolveVenuePhoto, PlaceSuggestion } from '../services/api';
+import { EventCreatePayload } from '../../types';
+import { colors, radii } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { fetchPlaceAutocomplete, resolveVenuePhoto, PlaceSuggestion } from '../../services/api';
 
 interface CreateEventModalProps {
   visible: boolean;

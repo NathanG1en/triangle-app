@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Platform } from 'react-native';
 import { colors } from './src/theme/colors';
 import { FontProvider, useFontTheme } from './src/theme/typography';
-import { CompassIcon, CalendarIcon, PersonIcon } from './src/components/Icons';
+import { CompassIcon, CalendarIcon, PersonIcon } from './src/components';
 import { DiscoverScreen } from './src/screens/DiscoverScreen';
 import { MyEventsScreen } from './src/screens/MyEventsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';

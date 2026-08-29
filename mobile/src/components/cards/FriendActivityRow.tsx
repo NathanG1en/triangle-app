@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { EventItem } from '../types';
-import { colors, radii } from '../theme/colors';
-import { useFontTheme } from '../theme/typography';
+import { EventItem } from '../../types';
+import { colors, radii } from '../../theme/colors';
+import { useFontTheme } from '../../theme/typography';
 
 interface FriendActivityRowProps {
   events: EventItem[];

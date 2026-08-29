@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, Linking, TextInput, ActivityIndicator, Platform } from 'react-native';
-import { EventItem } from '../types';
-import { colors, radii } from '../theme/colors';
-import { useFontTheme } from '../theme/typography';
-import { updateEventPhoto, reportEvent, blockUser } from '../services/api';
+import { EventItem } from '../../types';
+import { colors, radii } from '../../theme/colors';
+import { useFontTheme } from '../../theme/typography';
+import { updateEventPhoto, reportEvent, blockUser } from '../../services/api';
 
 interface EventDetailModalProps {
   event: EventItem | null;

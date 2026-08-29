@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
-import { colors, radii } from '../theme/colors';
-import { useFontTheme } from '../theme/typography';
+import { colors, radii } from '../../theme/colors';
+import { useFontTheme } from '../../theme/typography';
 
 interface FilterSheetModalProps {
   visible: boolean;

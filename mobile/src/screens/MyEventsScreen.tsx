@@ -4,8 +4,7 @@ import { EventItem } from '../types';
 import { fetchEvents, toggleAttendance } from '../services/api';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
-import { EventCard } from '../components/EventCard';
-import { EventDetailModal } from '../components/EventDetailModal';
+import { EventCard, EventDetailModal } from '../components';
 
 export const MyEventsScreen: React.FC = () => {
   const [tab, setTab] = useState<'GOING' | 'INTERESTED'>('GOING');
