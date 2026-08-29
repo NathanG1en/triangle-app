@@ -3,6 +3,16 @@ from typing import Dict, List, Any
 from sqlalchemy.orm import Session
 from app.models.events import Event
 from app.ingestion.pipeline import IngestionPipeline
+
+# Verified RTP Weekly Scrapers
+from app.ingestion.scrapers.thisisraleigh import ThisIsRaleighScraper
+from app.ingestion.scrapers.raleighwood import RaleighwoodScraper
+from app.ingestion.scrapers.visitraleighcary import VisitRaleighCaryScraper
+from app.ingestion.scrapers.discoverdurham import DiscoverDurhamScraper
+from app.ingestion.scrapers.triangleweekender import TriangleWeekenderScraper
+from app.ingestion.scrapers.eyeonthetriangle import EyeOnTheTrianglePodcastScraper
+
+# Existing Regional Scrapers
 from app.ingestion.scrapers.durhamlowdown import DurhamLowdownScraper
 from app.ingestion.scrapers.indyweek import IndyWeekScraper
 from app.ingestion.scrapers.raleighmag import RaleighMagScraper
@@ -16,10 +26,16 @@ class IngestionManager:
         self.db = db
         self.pipeline = IngestionPipeline(db)
         self.scrapers = [
+            ThisIsRaleighScraper(),
+            RaleighwoodScraper(),
+            VisitRaleighCaryScraper(),
+            DiscoverDurhamScraper(),
+            TriangleWeekenderScraper(),
+            EyeOnTheTrianglePodcastScraper(),
+            TriangleOnCheapScraper(),
             DurhamLowdownScraper(),
             IndyWeekScraper(),
             RaleighMagScraper(),
-            TriangleOnCheapScraper(),
             VisitRaleighScraper(),
             NCMAArtScraper(),
             TriangleSportsAndParksScraper()

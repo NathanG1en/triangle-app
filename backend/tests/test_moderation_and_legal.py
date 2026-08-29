@@ -26,8 +26,11 @@ def setup_data():
 
 
 def test_submit_report(client):
-    events_resp = client.get("/api/v1/events?current_user_id=user_1")
-    event_id = events_resp.json()[0]["id"]
+    from tests.conftest import TestingSessionLocal
+    db = TestingSessionLocal()
+    event = db.query(Event).filter(Event.created_by_user_id == "user_spammer").first()
+    event_id = event.id
+    db.close()
 
     response = client.post(
         "/api/v1/moderation/report",
