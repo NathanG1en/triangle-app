@@ -38,6 +38,38 @@ def create_report(
     return report
 
 
+@router.get("/moderation/reports", response_model=List[ReportResponse])
+def get_reports(
+    status: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db)
+):
+    """Admin endpoint to retrieve flagged content reports."""
+    query = db.query(Report)
+    if status:
+        query = query.filter(Report.status == status)
+    reports = query.order_by(Report.created_at.desc()).limit(100).all()
+    return reports
+
+
+@router.post("/moderation/report/{report_id}/resolve")
+def resolve_report(
+    report_id: int,
+    action: str = Query(default="DISMISS"),
+    db: Session = Depends(get_db)
+):
+    """Admin endpoint to resolve or dismiss a report."""
+    report = db.query(Report).filter(Report.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    if action == "DELETE_EVENT" and report.target_event_id:
+        db.query(Event).filter(Event.id == report.target_event_id).delete()
+
+    report.status = "RESOLVED" if action != "DISMISS" else "DISMISSED"
+    db.commit()
+    return {"status": "ok", "action_taken": action}
+
+
 @router.post("/moderation/block")
 def block_user(
     payload: UserBlockCreate,

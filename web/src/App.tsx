@@ -24,13 +24,15 @@ import { NotificationPanel } from './components/NotificationPanel';
 import { UserProfileModal } from './components/UserProfileModal';
 import { PublicProfileModal } from './components/PublicProfileModal';
 import { AuthModal } from './components/AuthModal';
-import { LayoutGrid, Map as MapIcon } from 'lucide-react';
+import { AdminConsoleModal } from './components/AdminConsoleModal';
+import { LayoutGrid, Map as MapIcon, Shield } from 'lucide-react';
 
 export function App() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
 
+  // Dark Mode State (Defaults to FALSE - Light mode as default)
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('triangle_theme');
     return saved === 'dark';
@@ -62,6 +64,7 @@ export function App() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [publicProfileUserId, setPublicProfileUserId] = useState<string | null>(null);
 
   // Notifications
@@ -114,9 +117,12 @@ export function App() {
     return () => clearInterval(timer);
   }, [loadNotifications]);
 
-  // Deep Link ?event=123 handling
+  // Deep Link ?event=123 or ?admin=true handling
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true') {
+      setIsAdminOpen(true);
+    }
     const eventIdParam = params.get('event');
     if (eventIdParam) {
       const id = parseInt(eventIdParam, 10);
@@ -278,11 +284,14 @@ export function App() {
           </div>
 
           <div className="flex items-center gap-4 text-xs font-bold text-[#77736F] dark:text-[#94A3B8]">
+            <button onClick={() => setIsAdminOpen(true)} className="flex items-center gap-1 hover:text-[#1A1A1A] dark:hover:text-[#F8FAFC]">
+              <Shield size={12} />
+              <span>Admin Console</span>
+            </button>
+            <span>·</span>
             <a href="http://localhost:8000/privacy" target="_blank" rel="noreferrer" className="hover:text-[#1A1A1A] dark:hover:text-[#F8FAFC]">Privacy Policy</a>
             <span>·</span>
             <a href="http://localhost:8000/support" target="_blank" rel="noreferrer" className="hover:text-[#1A1A1A] dark:hover:text-[#F8FAFC]">Support</a>
-            <span>·</span>
-            <span>RTP Grad Cohort 2026</span>
           </div>
         </div>
       </footer>
@@ -332,6 +341,13 @@ export function App() {
         onClose={() => setIsAuthOpen(false)}
         currentUser={firebaseUser}
         onAuthSuccess={() => loadEvents()}
+      />
+
+      <AdminConsoleModal
+        isOpen={isAdminOpen}
+        onClose={() => setIsAdminOpen(false)}
+        events={events}
+        onRefreshEvents={loadEvents}
       />
     </div>
   );
