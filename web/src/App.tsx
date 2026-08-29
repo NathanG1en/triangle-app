@@ -47,10 +47,10 @@ export function App() {
     }
   }, [darkMode]);
 
-  // Filters
-  const [selectedCity, setSelectedCity] = useState('All');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedTimeType, setSelectedTimeType] = useState('all');
+  // Multi-Select Filters State
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedTimeType, setSelectedTimeType] = useState('all'); // 'all' | 'timed' | 'untimed'
   const [freeOnly, setFreeOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -83,19 +83,52 @@ export function App() {
     return () => unsubscribe();
   }, []);
 
-  // Fetch events
+  // Toggle multi-select cities
+  const handleToggleCity = (city: string) => {
+    setSelectedCities((prev) =>
+      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]
+    );
+  };
+
+  const handleClearCities = () => {
+    setSelectedCities([]);
+  };
+
+  // Toggle multi-select categories
+  const handleToggleCategory = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const handleResetFilters = () => {
+    setSelectedCities([]);
+    setSelectedCategories([]);
+    setSelectedTimeType('all');
+    setFreeOnly(false);
+    setSearchQuery('');
+  };
+
+  const hasActiveFilters =
+    selectedCities.length > 0 ||
+    selectedCategories.length > 0 ||
+    selectedTimeType !== 'all' ||
+    freeOnly ||
+    searchQuery.trim().length > 0;
+
+  // Fetch events with multi-select support
   const loadEvents = useCallback(async () => {
     setLoading(true);
     const data = await fetchEvents({
-      city: selectedCity,
-      category: selectedCategory,
+      city: selectedCities,
+      category: selectedCategories,
       search: searchQuery,
       free_only: freeOnly,
       time_type: selectedTimeType,
     });
     setEvents(data);
     setLoading(false);
-  }, [selectedCity, selectedCategory, searchQuery, freeOnly, selectedTimeType]);
+  }, [selectedCities, selectedCategories, searchQuery, freeOnly, selectedTimeType]);
 
   useEffect(() => {
     loadEvents();
@@ -169,21 +202,14 @@ export function App() {
     setUnreadCount(0);
   };
 
-  const handleResetFilters = () => {
-    setSelectedCity('All');
-    setSelectedCategory('All');
-    setSelectedTimeType('all');
-    setFreeOnly(false);
-    setSearchQuery('');
-  };
-
   return (
     <div className="min-h-screen bg-[#FFFEFD] dark:bg-[#020916] text-[#1A1A1A] dark:text-[#F8FAFC] flex flex-col justify-between transition-colors">
       <div>
         {/* Header Masthead */}
         <Header
-          selectedCity={selectedCity}
-          onSelectCity={setSelectedCity}
+          selectedCities={selectedCities}
+          onToggleCity={handleToggleCity}
+          onClearCities={handleClearCities}
           unreadCount={unreadCount}
           onOpenNotifications={() => setIsNotifOpen(true)}
           onOpenCreateModal={() => setIsCreateOpen(true)}
@@ -196,14 +222,16 @@ export function App() {
 
         {/* Vibe Strip & Search */}
         <VibeBar
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
+          selectedCategories={selectedCategories}
+          onToggleCategory={handleToggleCategory}
           selectedTimeType={selectedTimeType}
           onSelectTimeType={setSelectedTimeType}
           freeOnly={freeOnly}
           onToggleFreeOnly={() => setFreeOnly(!freeOnly)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onResetAllFilters={handleResetFilters}
+          hasActiveFilters={hasActiveFilters}
         />
 
         {/* Mobile View Switcher (Visible only on < lg screens) */}

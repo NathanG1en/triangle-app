@@ -1,10 +1,11 @@
 import React from 'react';
-import { Bell, Plus, LogIn, Sun, Moon } from 'lucide-react';
+import { Bell, Plus, LogIn, Sun, Moon, Check } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 
 interface HeaderProps {
-  selectedCity: string;
-  onSelectCity: (city: string) => void;
+  selectedCities: string[];
+  onToggleCity: (city: string) => void;
+  onClearCities: () => void;
   unreadCount: number;
   onOpenNotifications: () => void;
   onOpenCreateModal: () => void;
@@ -16,8 +17,9 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  selectedCity,
-  onSelectCity,
+  selectedCities,
+  onToggleCity,
+  onClearCities,
   unreadCount,
   onOpenNotifications,
   onOpenCreateModal,
@@ -27,7 +29,8 @@ export const Header: React.FC<HeaderProps> = ({
   darkMode,
   onToggleDarkMode,
 }) => {
-  const cities = ['All', 'Durham', 'Raleigh', 'Cary', 'Chapel Hill', 'Morrisville'];
+  const cities = ['Durham', 'Raleigh', 'Cary', 'Chapel Hill', 'Morrisville'];
+  const isAllCities = selectedCities.length === 0;
 
   return (
     <header className="bg-[#FFFEFD] dark:bg-[#050E21] border-b border-[#E5E0D8] dark:border-white/10 sticky top-0 z-30 shadow-xs transition-colors">
@@ -47,41 +50,85 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Center: City Hub Selector Pills */}
+        {/* Center: Multi-Select City Hub Selector Pills */}
         <div className="hidden lg:flex items-center gap-2 shrink-0">
-          <span className="text-[10px] font-extrabold text-[#77736F] dark:text-[#94A3B8] uppercase tracking-wider mr-1">
-            CITY:
-          </span>
-          {cities.map((city) => (
-            <button
-              key={city}
-              onClick={() => onSelectCity(city)}
-              style={{ padding: '6px 14px' }}
-              className={`rounded-full text-xs font-bold transition-all border shrink-0 ${
-                selectedCity === city
-                  ? 'bg-[#1A1A1A] dark:bg-[#0018A8] text-white border-[#1A1A1A] dark:border-[#0018A8] shadow-xs'
-                  : 'bg-[#F5F1EC] dark:bg-[#0B172E] text-[#1A1A1A] dark:text-[#F8FAFC] border-[#E5E0D8] dark:border-white/10 hover:bg-[#EBE5DD] dark:hover:bg-[#122244]'
-              }`}
-            >
-              {city === 'All' ? 'All Triangle' : city}
-            </button>
-          ))}
+          <div className="flex items-center gap-1 text-[10px] font-extrabold text-[#77736F] dark:text-[#94A3B8] uppercase tracking-wider mr-1">
+            <span>CITY</span>
+            {selectedCities.length > 0 && (
+              <span className="bg-[#D95F4B] dark:bg-[#38BDF8] text-white dark:text-[#050E21] text-[9px] px-1.5 py-0.2 rounded-full font-bold">
+                {selectedCities.length}
+              </span>
+            )}
+            <span>:</span>
+          </div>
+
+          {/* All Triangle Button */}
+          <button
+            onClick={onClearCities}
+            style={{ padding: '6px 14px' }}
+            className={`rounded-full text-xs font-bold transition-all border shrink-0 ${
+              isAllCities
+                ? 'bg-[#1A1A1A] dark:bg-[#0018A8] text-white border-[#1A1A1A] dark:border-[#0018A8] shadow-xs'
+                : 'bg-[#F5F1EC] dark:bg-[#0B172E] text-[#1A1A1A] dark:text-[#F8FAFC] border-[#E5E0D8] dark:border-white/10 hover:bg-[#EBE5DD] dark:hover:bg-[#122244]'
+            }`}
+          >
+            All Triangle
+          </button>
+
+          {/* Individual Multi-Select City Pills */}
+          {cities.map((city) => {
+            const isSelected = selectedCities.includes(city);
+            return (
+              <button
+                key={city}
+                onClick={() => onToggleCity(city)}
+                style={{ padding: '6px 14px' }}
+                className={`flex items-center gap-1 rounded-full text-xs font-bold transition-all border shrink-0 ${
+                  isSelected
+                    ? 'bg-[#D95F4B] dark:bg-[#0018A8] text-white border-[#D95F4B] dark:border-[#38BDF8] shadow-xs'
+                    : 'bg-[#F5F1EC] dark:bg-[#0B172E] text-[#1A1A1A] dark:text-[#F8FAFC] border-[#E5E0D8] dark:border-white/10 hover:bg-[#EBE5DD] dark:hover:bg-[#122244]'
+                }`}
+              >
+                {isSelected && <Check size={12} strokeWidth={3} />}
+                <span>{city}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-3 shrink-0">
-          {/* Mobile City Selector Dropdown */}
-          <select
-            value={selectedCity}
-            onChange={(e) => onSelectCity(e.target.value)}
-            className="lg:hidden bg-[#F5F1EC] dark:bg-[#0B172E] text-xs font-bold text-[#1A1A1A] dark:text-[#F8FAFC] px-3 py-1.5 rounded-lg border border-[#E5E0D8] dark:border-white/10 outline-none"
-          >
-            {cities.map((c) => (
-              <option key={c} value={c}>
-                {c === 'All' ? 'All Cities' : c}
+          {/* Mobile Multi-Select Indicator / Clear Button */}
+          <div className="lg:hidden flex items-center gap-1.5">
+            {selectedCities.length > 0 && (
+              <button
+                onClick={onClearCities}
+                className="text-[10px] font-bold text-[#D95F4B] dark:text-[#38BDF8] underline"
+              >
+                Clear ({selectedCities.length})
+              </button>
+            )}
+
+            <select
+              value={selectedCities.length === 1 ? selectedCities[0] : 'All'}
+              onChange={(e) => {
+                if (e.target.value === 'All') onClearCities();
+                else onToggleCity(e.target.value);
+              }}
+              className="bg-[#F5F1EC] dark:bg-[#0B172E] text-xs font-bold text-[#1A1A1A] dark:text-[#F8FAFC] px-3 py-1.5 rounded-lg border border-[#E5E0D8] dark:border-white/10 outline-none"
+            >
+              <option value="All">
+                {selectedCities.length === 0
+                  ? 'All Cities'
+                  : `${selectedCities.length} Cities Selected`}
               </option>
-            ))}
-          </select>
+              {cities.map((c) => (
+                <option key={c} value={c}>
+                  {selectedCities.includes(c) ? `✓ ${c}` : c}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Deutsche Bank Dark Mode Toggle */}
           <button

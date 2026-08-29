@@ -104,17 +104,23 @@ def get_events(
         )
 
     if city and city != "All":
-        query = query.filter(Event.city.ilike(f"%{city}%"))
+        city_list = [c.strip() for c in city.split(",") if c.strip() and c.strip() != "All"]
+        if city_list:
+            city_filters = [Event.city.ilike(f"%{c}%") for c in city_list]
+            query = query.filter(or_(*city_filters))
 
     if category and category != "All":
-        query = query.filter(Event.category.ilike(f"%{category}%"))
+        cat_list = [c.strip() for c in category.split(",") if c.strip() and c.strip() != "All"]
+        if cat_list:
+            cat_filters = [Event.category.ilike(f"%{c}%") for c in cat_list]
+            query = query.filter(or_(*cat_filters))
 
     if free_only:
         query = query.filter(Event.is_free == True)
 
-    if time_type == "timed":
-        query = query.filter(or_(Event.is_suggestion == False, Event.is_suggestion == None))
-    elif time_type == "untimed":
+    if time_type == "timed" or time_type == "scheduled":
+        query = query.filter(or_(Event.is_suggestion == False, Event.is_suggestion.is_(None)))
+    elif time_type == "untimed" or time_type == "anytime" or time_type == "spot":
         query = query.filter(Event.is_suggestion == True)
 
     if search:

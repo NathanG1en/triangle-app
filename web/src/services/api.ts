@@ -90,8 +90,8 @@ export async function fetchPublicUserProfile(userId: string): Promise<UserProfil
 }
 
 export async function fetchEvents(filters: {
-  city?: string;
-  category?: string;
+  city?: string | string[];
+  category?: string | string[];
   search?: string;
   date_filter?: string;
   free_only?: boolean;
@@ -99,8 +99,14 @@ export async function fetchEvents(filters: {
 }): Promise<EventItem[]> {
   try {
     const params = new URLSearchParams();
-    if (filters.city && filters.city !== 'All') params.append('city', filters.city);
-    if (filters.category && filters.category !== 'All') params.append('category', filters.category);
+    if (filters.city) {
+      const cityVal = Array.isArray(filters.city) ? filters.city.filter(c => c !== 'All').join(',') : filters.city;
+      if (cityVal && cityVal !== 'All') params.append('city', cityVal);
+    }
+    if (filters.category) {
+      const catVal = Array.isArray(filters.category) ? filters.category.filter(c => c !== 'All').join(',') : filters.category;
+      if (catVal && catVal !== 'All') params.append('category', catVal);
+    }
     if (filters.search) params.append('search', filters.search);
     if (filters.date_filter && filters.date_filter !== 'all') params.append('date_filter', filters.date_filter);
     if (filters.free_only) params.append('free_only', 'true');
