@@ -31,6 +31,21 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
 
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('triangle_theme');
+    return saved === 'dark';
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('triangle_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('triangle_theme', 'light');
+    }
+  }, [darkMode]);
+
   // Filters
   const [selectedCity, setSelectedCity] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -162,7 +177,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFEFD] text-[#1A1A1A] flex flex-col justify-between">
+    <div className="min-h-screen bg-[#FFFEFD] dark:bg-[#020916] text-[#1A1A1A] dark:text-[#F8FAFC] flex flex-col justify-between transition-colors">
       <div>
         {/* Header Masthead */}
         <Header
@@ -174,6 +189,8 @@ export function App() {
           onOpenProfileModal={() => setIsProfileOpen(true)}
           firebaseUser={firebaseUser}
           onOpenAuthModal={() => setIsAuthOpen(true)}
+          darkMode={darkMode}
+          onToggleDarkMode={() => setDarkMode(!darkMode)}
         />
 
         {/* Vibe Strip & Search */}
@@ -189,16 +206,16 @@ export function App() {
         />
 
         {/* Mobile View Switcher (Visible only on < lg screens) */}
-        <div className="lg:hidden bg-[#F5F1EC] border-b border-[#E5E0D8] px-6 py-2.5 flex items-center justify-between">
-          <span className="text-xs font-bold text-[#77736F]">
+        <div className="lg:hidden bg-[#F5F1EC] dark:bg-[#0B172E] border-b border-[#E5E0D8] dark:border-white/10 px-6 py-2.5 flex items-center justify-between">
+          <span className="text-xs font-bold text-[#77736F] dark:text-[#94A3B8]">
             {events.length} {events.length === 1 ? 'Plan' : 'Plans'} Found
           </span>
 
-          <div className="flex items-center bg-[#FFFEFD] p-1 rounded-lg border border-[#E5E0D8]">
+          <div className="flex items-center bg-[#FFFEFD] dark:bg-[#050E21] p-1 rounded-lg border border-[#E5E0D8] dark:border-white/10">
             <button
               onClick={() => setMobileView('feed')}
               className={`flex items-center gap-1 px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                mobileView === 'feed' ? 'bg-[#1A1A1A] text-white' : 'text-[#77736F]'
+                mobileView === 'feed' ? 'bg-[#1A1A1A] dark:bg-[#0018A8] text-white' : 'text-[#77736F] dark:text-[#94A3B8]'
               }`}
             >
               <LayoutGrid size={13} />
@@ -207,7 +224,7 @@ export function App() {
             <button
               onClick={() => setMobileView('map')}
               className={`flex items-center gap-1 px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                mobileView === 'map' ? 'bg-[#1A1A1A] text-white' : 'text-[#77736F]'
+                mobileView === 'map' ? 'bg-[#1A1A1A] dark:bg-[#0018A8] text-white' : 'text-[#77736F] dark:text-[#94A3B8]'
               }`}
             >
               <MapIcon size={13} />
@@ -236,7 +253,7 @@ export function App() {
             {/* Right 5 Columns: Sticky Interactive Map */}
             <div className={`lg:col-span-5 lg:sticky lg:top-20 ${mobileView === 'feed' ? 'hidden lg:block' : 'block'}`}>
               <div className="hidden lg:flex items-center justify-between mb-2">
-                <h3 className="font-['Bricolage_Grotesque'] text-xs font-bold uppercase tracking-wider text-[#77736F]">
+                <h3 className="font-['Bricolage_Grotesque'] text-xs font-bold uppercase tracking-wider text-[#77736F] dark:text-[#94A3B8]">
                   TRIANGLE MAP EXPLORER
                 </h3>
               </div>
@@ -244,6 +261,7 @@ export function App() {
                 events={events}
                 onSelectEvent={setSelectedEventDetail}
                 fullHeight={true}
+                darkMode={darkMode}
               />
             </div>
           </div>
@@ -251,18 +269,18 @@ export function App() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-[#F5F1EC] border-t border-[#E5E0D8] py-8 mt-12">
+      <footer className="bg-[#F5F1EC] dark:bg-[#050E21] border-t border-[#E5E0D8] dark:border-white/10 py-8 mt-12 transition-colors">
         <div className="layout-container flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-[#D95F4B] text-white flex items-center justify-center font-bold text-[10px]">▲</div>
-            <span className="font-['Bricolage_Grotesque'] text-sm font-bold text-[#1A1A1A]">Triangle Social Events</span>
-            <span className="text-xs text-[#77736F]">· Cohort of '26</span>
+            <div className="w-5 h-5 rounded-full bg-[#D95F4B] dark:bg-[#0018A8] text-white flex items-center justify-center font-bold text-[10px]">▲</div>
+            <span className="font-['Bricolage_Grotesque'] text-sm font-bold text-[#1A1A1A] dark:text-[#F8FAFC]">Triangle Social Events</span>
+            <span className="text-xs text-[#77736F] dark:text-[#94A3B8]">· Cohort of '26</span>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-bold text-[#77736F]">
-            <a href="http://localhost:8000/privacy" target="_blank" rel="noreferrer" className="hover:text-[#1A1A1A]">Privacy Policy</a>
+          <div className="flex items-center gap-4 text-xs font-bold text-[#77736F] dark:text-[#94A3B8]">
+            <a href="http://localhost:8000/privacy" target="_blank" rel="noreferrer" className="hover:text-[#1A1A1A] dark:hover:text-[#F8FAFC]">Privacy Policy</a>
             <span>·</span>
-            <a href="http://localhost:8000/support" target="_blank" rel="noreferrer" className="hover:text-[#1A1A1A]">Support</a>
+            <a href="http://localhost:8000/support" target="_blank" rel="noreferrer" className="hover:text-[#1A1A1A] dark:hover:text-[#F8FAFC]">Support</a>
             <span>·</span>
             <span>RTP Grad Cohort 2026</span>
           </div>

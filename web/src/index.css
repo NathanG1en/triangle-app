@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
-  /* Editorial Color Tokens */
+  /* Original Editorial Light Tokens */
   --color-paper: #FFFEFD;
   --color-ink: #1A1A1A;
   --color-surface: #F5F1EC;
@@ -31,6 +33,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   line-height: 1.5;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Deutsche Bank Deep Navy & Jet Black Dark Mode Styling */
+html.dark {
+  color-scheme: dark;
 }
 
 /* Explicit Centered Container Class */
@@ -91,7 +99,7 @@ body {
 
 .leaflet-popup-content-wrapper {
   border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(26, 26, 26, 0.12) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
   border: 1px solid var(--color-border) !important;
   padding: 4px !important;
   background: var(--color-paper) !important;

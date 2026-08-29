@@ -36,7 +36,7 @@ export const VibeBar: React.FC<VibeBarProps> = ({
   ];
 
   return (
-    <div className="bg-[#FFFEFD] border-b border-[#E5E0D8] py-3">
+    <div className="bg-[#FFFEFD] dark:bg-[#050E21] border-b border-[#E5E0D8] dark:border-white/10 py-3 transition-colors">
       <div className="layout-container flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Left: Filter Chips */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 min-w-0">
@@ -63,8 +63,8 @@ export const VibeBar: React.FC<VibeBarProps> = ({
                 }}
                 className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border shrink-0 ${
                   isActive
-                    ? 'bg-[#E8D7CC] text-[#D95F4B] border-[#D95F4B] font-bold shadow-xs'
-                    : 'bg-[#F5F1EC] text-[#1A1A1A] border-[#E5E0D8] hover:bg-[#EBE5DD]'
+                    ? 'bg-[#E8D7CC] dark:bg-[#0018A8] text-[#D95F4B] dark:text-[#F8FAFC] border-[#D95F4B] dark:border-[#38BDF8] font-bold shadow-xs'
+                    : 'bg-[#F5F1EC] dark:bg-[#0B172E] text-[#1A1A1A] dark:text-[#F8FAFC] border-[#E5E0D8] dark:border-white/10 hover:bg-[#EBE5DD] dark:hover:bg-[#122244]'
                 }`}
               >
                 {v.label}
@@ -75,7 +75,7 @@ export const VibeBar: React.FC<VibeBarProps> = ({
 
         {/* Right: Clean Search Input */}
         <div className="relative shrink-0 md:w-72 flex items-center">
-          <div className="absolute left-3 pointer-events-none text-[#77736F] flex items-center justify-center z-10">
+          <div className="absolute left-3 pointer-events-none text-[#77736F] dark:text-[#94A3B8] flex items-center justify-center z-10">
             <Search size={14} />
           </div>
           <input
@@ -84,7 +84,7 @@ export const VibeBar: React.FC<VibeBarProps> = ({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             style={{ paddingLeft: '38px', paddingRight: '14px' }}
-            className="w-full bg-[#F5F1EC] text-xs font-semibold text-[#1A1A1A] py-2 rounded-full border border-[#E5E0D8] outline-none focus:border-[#1A1A1A] transition-colors"
+            className="w-full bg-[#F5F1EC] dark:bg-[#0B172E] text-xs font-semibold text-[#1A1A1A] dark:text-[#F8FAFC] py-2 rounded-full border border-[#E5E0D8] dark:border-white/10 outline-none focus:border-[#1A1A1A] dark:focus:border-[#38BDF8] transition-colors"
           />
         </div>
       </div>

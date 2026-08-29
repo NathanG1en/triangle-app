@@ -30,30 +30,34 @@ export const EventFeed: React.FC<EventFeedProps> = ({
       )}
 
       {/* Publication Section Headline */}
-      <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-[#1A1A1A]">
-        <h2 className="font-['Bricolage_Grotesque'] text-sm font-extrabold text-[#1A1A1A] tracking-wider uppercase">
+      <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-[#1A1A1A] dark:border-white/20">
+        <h2 className="font-['Bricolage_Grotesque'] text-sm font-extrabold text-[#1A1A1A] dark:text-[#F8FAFC] tracking-wider uppercase">
           {events.length} THINGS WORTH DOING THIS WEEKEND
         </h2>
       </div>
 
       {loading ? (
         <div className="py-12 text-center">
-          <div className="inline-block w-6 h-6 border-2 border-[#D95F4B] border-t-transparent rounded-full animate-spin mb-2"></div>
-          <p className="font-['Outfit'] text-xs font-semibold text-[#77736F]">Loading Triangle feed...</p>
+          <div className="inline-block w-6 h-6 border-2 border-[#D95F4B] dark:border-[#38BDF8] border-t-transparent rounded-full animate-spin mb-2"></div>
+          <p className="font-['Outfit'] text-xs font-semibold text-[#77736F] dark:text-[#94A3B8]">Loading Triangle feed...</p>
         </div>
       ) : events.length === 0 ? (
-        <div className="py-12 text-center bg-[#F5F1EC] rounded-2xl border border-[#E5E0D8] p-6 my-4">
-          <h4 className="font-['Bricolage_Grotesque'] text-lg font-bold text-[#1A1A1A] mb-1">No Plans Found</h4>
-          <p className="text-xs text-[#77736F] mb-4">No events match your current city or filter criteria.</p>
+        <div className="py-12 text-center bg-[#F5F1EC] dark:bg-[#0B172E] rounded-2xl border border-[#E5E0D8] dark:border-white/10 p-6 my-4">
+          <p className="font-['Bricolage_Grotesque'] text-base font-bold text-[#1A1A1A] dark:text-[#F8FAFC] mb-1">
+            No plans match your current filters
+          </p>
+          <p className="text-xs text-[#77736F] dark:text-[#94A3B8] mb-4">
+            Try adjusting your vibe chips or clearing your search term.
+          </p>
           <button
             onClick={onResetFilters}
-            className="bg-[#1A1A1A] text-white text-xs font-bold px-4 py-2 rounded-lg"
+            className="px-4 py-2 bg-[#1A1A1A] dark:bg-[#0018A8] text-white text-xs font-bold rounded-lg hover:bg-black dark:hover:bg-[#001073] transition-colors"
           >
-            Reset Filters
+            Clear Filters
           </button>
         </div>
       ) : (
-        <div className="divide-y divide-[#E5E0D8]">
+        <div className="flex flex-col">
           {events.map((event) => (
             <EventCard
               key={event.id}

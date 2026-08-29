@@ -55,7 +55,7 @@ function getEventCoords(event: EventItem): { lat: number; lng: number } {
   return CITY_CENTERS[event.city] || { lat: 35.87, lng: -78.78 };
 }
 
-// Custom "Sexy Editorial Warm Sand & Dark Ink" Google Maps Style Theme
+// Custom Light Mode Google Maps Style Theme
 const SEXY_GOOGLE_MAP_STYLE: any[] = [
   { elementType: "geometry", stylers: [{ color: "#F5F1EC" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
@@ -75,10 +75,24 @@ const SEXY_GOOGLE_MAP_STYLE: any[] = [
   { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#075E59" }] }
 ];
 
+// Deutsche Bank Dark Navy Map Style Theme
+const DEUTSCHE_DARK_MAP_STYLE: any[] = [
+  { elementType: "geometry", stylers: [{ color: "#050E21" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#94A3B8" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#050E21" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#0B172E" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#0B172E" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#0018A8" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#0018A8" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#020916" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#38BDF8" }] }
+];
+
 interface EventMapViewProps {
   events: EventItem[];
   onSelectEvent: (event: EventItem) => void;
   fullHeight?: boolean;
+  darkMode?: boolean;
 }
 
 declare global {
@@ -88,7 +102,7 @@ declare global {
   }
 }
 
-export const EventMapView: React.FC<EventMapViewProps> = ({ events, onSelectEvent, fullHeight = false }) => {
+export const EventMapView: React.FC<EventMapViewProps> = ({ events, onSelectEvent, fullHeight = false, darkMode = false }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<any>(null);
   const googleMarkersRef = useRef<any[]>([]);
@@ -128,16 +142,20 @@ export const EventMapView: React.FC<EventMapViewProps> = ({ events, onSelectEven
   useEffect(() => {
     if (!googleLoaded || !mapContainerRef.current || !window.google?.maps) return;
 
+    const currentMapStyle = darkMode ? DEUTSCHE_DARK_MAP_STYLE : SEXY_GOOGLE_MAP_STYLE;
+
     if (!googleMapRef.current) {
       const map = new window.google.maps.Map(mapContainerRef.current, {
         center: { lat: 35.87, lng: -78.78 },
         zoom: 10,
-        styles: SEXY_GOOGLE_MAP_STYLE,
+        styles: currentMapStyle,
         disableDefaultUI: true,
         zoomControl: true,
         clickableIcons: false,
       });
       googleMapRef.current = map;
+    } else {
+      googleMapRef.current.setOptions({ styles: currentMapStyle });
     }
 
     const map = googleMapRef.current;
@@ -154,7 +172,7 @@ export const EventMapView: React.FC<EventMapViewProps> = ({ events, onSelectEven
       bounds.extend(position);
 
       const isSpot = event.is_suggestion || event.source_type === 'SUGGESTION';
-      const pinColor = isSpot ? '#075E59' : '#D95F4B';
+      const pinColor = isSpot ? (darkMode ? '#00E5FF' : '#075E59') : (darkMode ? '#38BDF8' : '#D95F4B');
       const category = (event.category || 'SOCIAL').toUpperCase();
       const priceLabel = event.is_free ? 'FREE' : `$${event.price_min}`;
 
@@ -163,7 +181,7 @@ export const EventMapView: React.FC<EventMapViewProps> = ({ events, onSelectEven
         fillColor: pinColor,
         fillOpacity: 0.95,
         scale: 9,
-        strokeColor: '#1A1A1A',
+        strokeColor: darkMode ? '#FFFFFF' : '#1A1A1A',
         strokeWeight: 2,
       };
 
@@ -216,7 +234,7 @@ export const EventMapView: React.FC<EventMapViewProps> = ({ events, onSelectEven
     if (events.length > 0) {
       map.fitBounds(bounds);
     }
-  }, [googleLoaded, events, onSelectEvent]);
+  }, [googleLoaded, events, onSelectEvent, darkMode]);
 
   // Fallback Renderer: OpenStreetMap / Leaflet (Only if Google Maps API fails to load)
   useEffect(() => {
@@ -224,11 +242,16 @@ export const EventMapView: React.FC<EventMapViewProps> = ({ events, onSelectEven
 
     if (!leafletMapRef.current) {
       const map = L.map(mapContainerRef.current, { zoomControl: true }).setView([35.87, -78.78], 10);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OSM · CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19
-      }).addTo(map);
+      L.tileLayer(
+        darkMode
+          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+          : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        {
+          attribution: '© OSM · CARTO',
+          subdomains: 'abcd',
+          maxZoom: 19
+        }
+      ).addTo(map);
       leafletMapRef.current = map;
     }
 
@@ -244,12 +267,12 @@ export const EventMapView: React.FC<EventMapViewProps> = ({ events, onSelectEven
       latLngs.push([coords.lat, coords.lng]);
 
       const isSpot = event.is_suggestion || event.source_type === 'SUGGESTION';
-      const pinColor = isSpot ? '#075E59' : '#D95F4B';
+      const pinColor = isSpot ? (darkMode ? '#00E5FF' : '#075E59') : (darkMode ? '#38BDF8' : '#D95F4B');
 
       const marker = L.circleMarker([coords.lat, coords.lng], {
         radius: 9,
         fillColor: pinColor,
-        color: '#1A1A1A',
+        color: darkMode ? '#FFFFFF' : '#1A1A1A',
         weight: 1.5,
         fillOpacity: 0.9,
       }).addTo(map);
@@ -285,28 +308,28 @@ export const EventMapView: React.FC<EventMapViewProps> = ({ events, onSelectEven
     if (latLngs.length > 0) {
       map.fitBounds(latLngs, { padding: [30, 30], maxZoom: 13 });
     }
-  }, [googleLoaded, events, onSelectEvent]);
+  }, [googleLoaded, events, onSelectEvent, darkMode]);
 
   return (
     <div className="w-full h-full flex flex-col">
       {/* Legend & Clean Map Header */}
-      <div className="bg-[#F5F1EC] px-3.5 py-2.5 rounded-xl border border-[#E5E0D8] mb-2 flex items-center justify-between gap-2 text-[11px] font-bold">
+      <div className="bg-[#F5F1EC] dark:bg-[#0B172E] px-3.5 py-2.5 rounded-xl border border-[#E5E0D8] dark:border-white/10 mb-2 flex items-center justify-between gap-2 text-[11px] font-bold transition-colors">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#D95F4B] border border-[#1A1A1A]"></span>
-            <span>Timed Events</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#D95F4B] dark:bg-[#38BDF8] border border-[#1A1A1A] dark:border-white"></span>
+            <span className="text-[#1A1A1A] dark:text-[#F8FAFC]">Timed Events</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#075E59] border border-[#1A1A1A]"></span>
-            <span>Anytime Spots</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#075E59] dark:bg-[#00E5FF] border border-[#1A1A1A] dark:border-white"></span>
+            <span className="text-[#1A1A1A] dark:text-[#F8FAFC]">Anytime Spots</span>
           </div>
         </div>
 
-        <span className="text-[#77736F]">{events.length} Pinned</span>
+        <span className="text-[#77736F] dark:text-[#94A3B8]">{events.length} Pinned</span>
       </div>
 
       {/* Map Canvas Container */}
-      <div className={`w-full rounded-2xl overflow-hidden border border-[#E5E0D8] shadow-xs relative ${fullHeight ? 'h-[calc(100vh-210px)]' : 'h-[500px]'}`}>
+      <div className={`w-full rounded-2xl overflow-hidden border border-[#E5E0D8] dark:border-white/10 shadow-xs relative ${fullHeight ? 'h-[calc(100vh-210px)]' : 'h-[500px]'}`}>
         <div ref={mapContainerRef} className="w-full h-full z-10" />
       </div>
     </div>
