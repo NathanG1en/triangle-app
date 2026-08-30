@@ -51,11 +51,22 @@ class RaleighwoodScraper(BaseScraper):
                     parts = text.split('—')
                     title = parts[0].strip() if parts else text[:100]
 
+                    # Parse date from text if available
+                    event_date = datetime.now() + timedelta(days=2)
+                    month_match = re.search(r'(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})', text, re.I)
+                    if month_match:
+                        try:
+                            month_str, day_str = month_match.group(1), month_match.group(2)
+                            month_num = datetime.strptime(month_str[:3], "%b").month
+                            event_date = datetime(2026, month_num, int(day_str), 19, 0)
+                        except Exception:
+                            pass
+
                     if len(title) > 5:
                         candidate = EventCandidate(
                             title=title[:150],
                             description=text,
-                            start_at=datetime.now() + timedelta(days=2),
+                            start_at=event_date,
                             city="Raleigh",
                             venue_name="Raleighwood Spot",
                             source_name=self.source_name,

@@ -126,11 +126,39 @@ def is_same_event(candidate: EventCandidate, existing: Event) -> bool:
     return False
 
 
+REJECT_TITLE_PATTERNS = [
+    r'find events across',
+    r'can’t-miss triangle events',
+    r'can\'t-miss triangle events',
+    r'click here',
+    r'read more',
+    r'^duke arts$',
+    r'subscribe to',
+    r'sign up for',
+    r'privacy policy',
+    r'terms of service',
+    r'around the triangle',
+    r'eye on the triangle',
+]
+
+def is_valid_event_title(title: str) -> bool:
+    if not title or len(title.strip()) < 5:
+        return False
+    t_lower = title.strip().lower()
+    for pat in REJECT_TITLE_PATTERNS:
+        if re.search(pat, t_lower):
+            return False
+    return True
+
+
 class IngestionPipeline:
     def __init__(self, db: Session):
         self.db = db
 
-    def process_candidate(self, candidate: EventCandidate) -> Event:
+    def process_candidate(self, candidate: EventCandidate) -> Optional[Event]:
+        if not candidate or not is_valid_event_title(candidate.title):
+            return None
+
         city = normalize_city(candidate.city)
         category = normalize_category(candidate.category)
         venue_name = candidate.venue_name.strip() if candidate.venue_name else "Triangle Venue"

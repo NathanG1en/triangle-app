@@ -10,6 +10,8 @@ from app.ingestion.scrapers.raleighwood import RaleighwoodScraper
 from app.ingestion.scrapers.visitraleighcary import VisitRaleighCaryScraper
 from app.ingestion.scrapers.discoverdurham import DiscoverDurhamScraper
 from app.ingestion.scrapers.triangleweekender import TriangleWeekenderScraper
+from app.ingestion.scrapers.catscradle import CatsCradleScraper
+from app.ingestion.scrapers.motorco import MotorcoScraper
 
 # Existing Regional Scrapers
 from app.ingestion.scrapers.durhamlowdown import DurhamLowdownScraper
@@ -30,6 +32,8 @@ class IngestionManager:
             VisitRaleighCaryScraper(),
             DiscoverDurhamScraper(),
             TriangleWeekenderScraper(),
+            CatsCradleScraper(),
+            MotorcoScraper(),
             TriangleOnCheapScraper(),
             DurhamLowdownScraper(),
             IndyWeekScraper(),
@@ -63,7 +67,8 @@ class IngestionManager:
                 total_extracted += len(candidates)
                 for candidate in candidates:
                     event = self.pipeline.process_candidate(candidate)
-                    processed_events.append(event)
+                    if event:
+                        processed_events.append(event)
             except Exception as e:
                 print(f"[IngestionManager] Error executing {scraper.source_name}: {e}")
 
