@@ -139,6 +139,13 @@ REJECT_TITLE_PATTERNS = [
     r'terms of service',
     r'around the triangle',
     r'eye on the triangle',
+    r'^(a\s+)?guide\s+to',
+    r'^guide\s+to',
+    r'^if\s+you\s+like',
+    r'^where\s+to',
+    r'^top\s+\d+',
+    r'^best\s+places\s+to',
+    r'things\s+to\s+know',
 ]
 
 def is_valid_event_title(title: str) -> bool:

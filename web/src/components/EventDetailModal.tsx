@@ -237,12 +237,36 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </button>
             </div>
 
+            {/* Prominent Original Publication Source Panel */}
+            {event.source_url && (
+              <div className="bg-[#E8D7CC]/50 dark:bg-[#0018A8]/20 border border-[#D95F4B]/30 dark:border-[#38BDF8]/30 p-4 rounded-xl mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#D95F4B] dark:text-[#38BDF8]">
+                    ORIGINAL EVENT SOURCE
+                  </div>
+                  <div className="text-xs font-bold text-[#1A1A1A] dark:text-[#F8FAFC]">
+                    Published by {event.source_name || 'Triangle Event Source'}
+                  </div>
+                </div>
+
+                <a
+                  href={event.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1A1A1A] dark:bg-[#0018A8] text-white hover:bg-black dark:hover:bg-[#001073] transition-all flex items-center gap-1.5 shrink-0 shadow-xs"
+                >
+                  <span>View Original Event Page</span>
+                  <ExternalLink size={14} />
+                </a>
+              </div>
+            )}
+
             {/* Description */}
             <div className="mb-6">
-              <h4 className="font-['Bricolage_Grotesque'] text-sm font-bold text-[#1A1A1A] uppercase tracking-wider mb-2">
+              <h4 className="font-['Bricolage_Grotesque'] text-sm font-bold text-[#1A1A1A] dark:text-[#F8FAFC] uppercase tracking-wider mb-2">
                 About This Plan
               </h4>
-              <p className="text-sm text-[#444] leading-relaxed whitespace-pre-line">
+              <p className="text-sm text-[#444] dark:text-[#CBD5E1] leading-relaxed whitespace-pre-line">
                 {event.description || 'No description provided for this community event.'}
               </p>
             </div>

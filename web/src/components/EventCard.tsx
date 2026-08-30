@@ -1,6 +1,6 @@
 import React from 'react';
 import type { EventItem } from '../types';
-import { Share2, Repeat, Check } from 'lucide-react';
+import { Share2, Repeat, Check, ExternalLink } from 'lucide-react';
 
 interface EventCardProps {
   event: EventItem;
@@ -68,9 +68,28 @@ export const EventCard: React.FC<EventCardProps> = ({
           </h3>
 
           {/* Metadata Sub-line */}
-          <p className="text-xs text-[#77736F] dark:text-[#94A3B8] font-semibold truncate mb-2">
+          <p className="text-xs text-[#77736F] dark:text-[#94A3B8] font-semibold truncate mb-1">
             {timePriceVenueLine}
           </p>
+
+          {/* Source Attribution Line */}
+          {event.source_name && (
+            <div className="flex items-center gap-1 text-[11px] text-[#77736F] dark:text-[#94A3B8] font-medium mb-2">
+              <span>Via <span className="font-bold text-[#1A1A1A] dark:text-[#F8FAFC]">{event.source_name}</span></span>
+              {event.source_url && (
+                <a
+                  href={event.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-[#D95F4B] dark:text-[#38BDF8] hover:underline font-bold ml-1 inline-flex items-center gap-0.5"
+                >
+                  <span>Original Link</span>
+                  <ExternalLink size={10} />
+                </a>
+              )}
+            </div>
+          )}
 
           {/* Recurrence Summary */}
           {event.recurrence_rule && (
